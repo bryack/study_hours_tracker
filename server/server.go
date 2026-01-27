@@ -12,6 +12,8 @@ import (
 	"github.com/bryack/study_hours_tracker/domain"
 )
 
+const jsonContentType = "application/json"
+
 type SubjectStore interface {
 	GetHours(subject string) (int, error)
 	RecordHour(subject string, numHours int) error
@@ -43,7 +45,7 @@ func (s *StudyServer) reportHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("content-type", "application/json")
+	w.Header().Set("content-type", jsonContentType)
 	json.NewEncoder(w).Encode(studyActivities)
 }
 

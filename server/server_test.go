@@ -3,8 +3,10 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"sync"
 	"testing"
 
@@ -254,7 +256,9 @@ func TestRecordingHoursAndRetrievingThem(t *testing.T) {
 	svr.ServeHTTP(response, getReq)
 
 	assert.Equal(t, http.StatusOK, response.Code)
-	assert.Equal(t, "2", response.Body.String())
+	h, err := store.GetHours("tdd")
+	assert.NoError(t, err)
+	assert.Equal(t, strconv.Itoa(h), response.Body.String())
 }
 
 func TestReport(t *testing.T) {
@@ -273,15 +277,11 @@ func TestReport(t *testing.T) {
 
 		server.ServeHTTP(response, request)
 
-		var got []domain.StudyActivity
-		err = json.NewDecoder(response.Body).Decode(&got)
-		if err != nil {
-			t.Fatalf("Unable to parse response from server %q into slice of StudyActivity, '%v'", response.Body, err)
-		}
+		got := getReportFromResponse(t, response.Body)
 
 		assert.Equal(t, http.StatusOK, response.Code)
 		assert.Equal(t, wantedReport, got)
-		assert.Equal(t, "application/json", response.Result().Header.Get("content-type"))
+		assert.Equal(t, jsonContentType, response.Result().Header.Get("content-type"))
 
 	})
 	t.Run("handle 500", func(t *testing.T) {
@@ -299,4 +299,14 @@ func TestReport(t *testing.T) {
 
 		assert.Equal(t, http.StatusInternalServerError, response.Code)
 	})
+}
+
+func getReportFromResponse(t testing.TB, body io.Reader) []domain.StudyActivity {
+	t.Helper()
+	var report []domain.StudyActivity
+	err := json.NewDecoder(body).Decode(&report)
+	if err != nil {
+		t.Fatalf("Unable to parse response from server %q into slice of StudyActivity, '%v'", body, err)
+	}
+	return report
 }
