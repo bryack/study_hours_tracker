@@ -19,17 +19,31 @@ type StudyServer struct {
 	Store SubjectStore
 }
 
-func (s *StudyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	subject := strings.TrimPrefix(r.URL.Path, "/tracker/")
+type StudyActivity struct {
+	Name  string `json:"name"`
+	Hours int    `json:"hours"`
+}
 
-	switch r.Method {
-	case http.MethodPost:
-		s.processPostRequest(w, r, subject)
-	case http.MethodGet:
-		s.processGetRequest(w, subject)
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
-	}
+func (s *StudyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	router := http.NewServeMux()
+
+	router.Handle("/report", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	router.Handle("/tracker/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		subject := strings.TrimPrefix(r.URL.Path, "/tracker/")
+
+		switch r.Method {
+		case http.MethodPost:
+			s.processPostRequest(w, r, subject)
+		case http.MethodGet:
+			s.processGetRequest(w, subject)
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	}))
+	router.ServeHTTP(w, r)
 }
 
 func (s *StudyServer) processGetRequest(w http.ResponseWriter, subject string) {

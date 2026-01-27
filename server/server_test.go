@@ -185,6 +185,9 @@ func TestMethodNotAllowed(t *testing.T) {
 }
 
 func TestRacePostgresSubjectStore(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping race condition test in short mode")
+	}
 	connStr := testhelpers.SetupTestContainer(t)
 	store, err := database.NewPostgresSubjectStore(connStr)
 	if err != nil {
@@ -216,6 +219,9 @@ func TestRacePostgresSubjectStore(t *testing.T) {
 }
 
 func TestRecordingHoursAndRetrievingThem(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
 	connStr := testhelpers.SetupTestContainer(t)
 	store, err := database.NewPostgresSubjectStore(connStr)
 	if err != nil {
@@ -241,4 +247,20 @@ func TestRecordingHoursAndRetrievingThem(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, response.Code)
 	assert.Equal(t, "2", response.Body.String())
+}
+
+func TestReport(t *testing.T) {
+	store := &StubSubjectStore{
+		hours: map[string]int{},
+	}
+	server := &StudyServer{Store: store}
+	t.Run("returns 200 on /report", func(t *testing.T) {
+		request, err := http.NewRequest(http.MethodGet, "/report", nil)
+		assert.NoError(t, err)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assert.Equal(t, http.StatusOK, response.Code)
+	})
 }
