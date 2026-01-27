@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -8,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/bryack/study_hours_tracker/database"
+	"github.com/bryack/study_hours_tracker/domain"
 	"github.com/bryack/study_hours_tracker/testhelpers"
 
 	"github.com/stretchr/testify/assert"
@@ -16,6 +18,7 @@ import (
 type StubSubjectStore struct {
 	hours      map[string]int
 	recordCall []string
+	report     []domain.StudyActivity
 	err        error
 }
 
@@ -37,6 +40,13 @@ func (s *StubSubjectStore) GetHours(subject string) (int, error) {
 		return 0, database.ErrSubjectNotFound
 	}
 	return h, nil
+}
+
+func (s *StubSubjectStore) GetReport() ([]domain.StudyActivity, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	return s.report, nil
 }
 
 func TestGETSubjects(t *testing.T) {
@@ -227,9 +237,7 @@ func TestRecordingHoursAndRetrievingThem(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create store: %v", err)
 	}
-	svr := &StudyServer{
-		Store: store,
-	}
+	svr := NewStudyServer(store)
 
 	postReq, err := http.NewRequest(http.MethodPost, "/tracker/tdd?hours=1", nil)
 	if err != nil {
@@ -250,17 +258,45 @@ func TestRecordingHoursAndRetrievingThem(t *testing.T) {
 }
 
 func TestReport(t *testing.T) {
-	store := &StubSubjectStore{
-		hours: map[string]int{},
-	}
-	server := NewStudyServer(store)
 	t.Run("returns 200 on /report", func(t *testing.T) {
+		wantedReport := []domain.StudyActivity{
+			{Subject: "Docker", Hours: 4},
+			{Subject: "TDD", Hours: 6},
+		}
+		store := &StubSubjectStore{
+			report: wantedReport,
+		}
+		server := NewStudyServer(store)
 		request, err := http.NewRequest(http.MethodGet, "/report", nil)
 		assert.NoError(t, err)
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
 
+		var got []domain.StudyActivity
+		err = json.NewDecoder(response.Body).Decode(&got)
+		if err != nil {
+			t.Fatalf("Unable to parse response from server %q into slice of StudyActivity, '%v'", response.Body, err)
+		}
+
 		assert.Equal(t, http.StatusOK, response.Code)
+		assert.Equal(t, wantedReport, got)
+		assert.Equal(t, "application/json", response.Result().Header.Get("content-type"))
+
+	})
+	t.Run("handle 500", func(t *testing.T) {
+		store := &StubSubjectStore{
+			hours: map[string]int{},
+			err:   errors.New("database connection failed"),
+		}
+		server := NewStudyServer(store)
+
+		request, err := http.NewRequest(http.MethodGet, "/report", nil)
+		assert.NoError(t, err)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assert.Equal(t, http.StatusInternalServerError, response.Code)
 	})
 }

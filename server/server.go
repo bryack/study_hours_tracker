@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -8,21 +9,18 @@ import (
 	"strings"
 
 	"github.com/bryack/study_hours_tracker/database"
+	"github.com/bryack/study_hours_tracker/domain"
 )
 
 type SubjectStore interface {
 	GetHours(subject string) (int, error)
 	RecordHour(subject string, numHours int) error
+	GetReport() ([]domain.StudyActivity, error)
 }
 
 type StudyServer struct {
 	Store SubjectStore
 	http.Handler
-}
-
-type StudyActivity struct {
-	Subject string `json:"subject"`
-	Hours   int    `json:"hours"`
 }
 
 func NewStudyServer(store SubjectStore) *StudyServer {
@@ -40,7 +38,13 @@ func NewStudyServer(store SubjectStore) *StudyServer {
 }
 
 func (s *StudyServer) reportHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+	studyActivities, err := s.Store.GetReport()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("content-type", "application/json")
+	json.NewEncoder(w).Encode(studyActivities)
 }
 
 func (s *StudyServer) trackerHandler(w http.ResponseWriter, r *http.Request) {

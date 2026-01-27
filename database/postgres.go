@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/bryack/study_hours_tracker/domain"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -75,4 +76,28 @@ func (ps *PostgresSubjectStore) RecordHour(subject string, numHours int) error {
 		return fmt.Errorf("failed to insert %s: %w", subject, err)
 	}
 	return nil
+}
+
+func (ps *PostgresSubjectStore) GetReport() ([]domain.StudyActivity, error) {
+	rows, err := ps.db.Query("SELECT subject, hours FROM subjects")
+	if err != nil {
+		return nil, fmt.Errorf("failed to make query from subjects: %w", err)
+	}
+	defer rows.Close()
+
+	report := make([]domain.StudyActivity, 0)
+	for rows.Next() {
+		var sa domain.StudyActivity
+		err = rows.Scan(&sa.Subject, &sa.Hours)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		report = append(report, sa)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate rows: %w", err)
+	}
+
+	return report, nil
 }

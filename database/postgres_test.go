@@ -3,6 +3,7 @@ package database
 import (
 	"testing"
 
+	"github.com/bryack/study_hours_tracker/domain"
 	"github.com/bryack/study_hours_tracker/testhelpers"
 	"github.com/stretchr/testify/assert"
 )
@@ -68,5 +69,28 @@ func TestRecordAndGetHours(t *testing.T) {
 		h, err := store.GetHours("nonexistent")
 		assert.ErrorIs(t, err, ErrSubjectNotFound)
 		assert.Equal(t, 0, h)
+	})
+
+	t.Run("get report of all subjects and hours from DB", func(t *testing.T) {
+		_, err := store.db.Exec("TRUNCATE TABLE subjects")
+		if err != nil {
+			t.Fatalf("failed to truncate table 'subjects': %v", err)
+		}
+
+		testData := []domain.StudyActivity{
+			{Subject: "Docker", Hours: 4},
+			{Subject: "TDD", Hours: 6},
+		}
+
+		for _, v := range testData {
+			err = store.RecordHour(v.Subject, v.Hours)
+			assert.NoError(t, err)
+		}
+
+		report, err := store.GetReport()
+		assert.NoError(t, err)
+
+		assert.True(t, len(report) > 0, "report slice should contain smth")
+		assert.ElementsMatch(t, testData, report)
 	})
 }
