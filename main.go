@@ -1,0 +1,26 @@
+package main
+
+import (
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/bryack/study_hours_tracker/database"
+	"github.com/bryack/study_hours_tracker/server"
+)
+
+func main() {
+	connStr := os.Getenv("DATABASE_URL")
+	if connStr == "" {
+		connStr = "postgres://postgres:pass@localhost:5432/mydb?sslmode=disable"
+	}
+	store, err := database.NewPostgresSubjectStore(connStr)
+	if err != nil {
+		log.Fatalf("could not connect to database: %v", err)
+	}
+	svr := &server.StudyServer{
+		Store: store,
+	}
+
+	log.Fatal(http.ListenAndServe(":5000", svr))
+}
