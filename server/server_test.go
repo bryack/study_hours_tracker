@@ -46,7 +46,7 @@ func TestGETSubjects(t *testing.T) {
 			"http": 10,
 		},
 	}
-	server := &StudyServer{store}
+	server := NewStudyServer(store)
 	t.Run("returns TDD hours", func(t *testing.T) {
 		tddHours := "20"
 		request, err := http.NewRequest(http.MethodGet, "/tracker/tdd", nil)
@@ -90,7 +90,7 @@ func TestGETSubjects(t *testing.T) {
 		failedStore := &StubSubjectStore{
 			err: errors.New("database connection lost"),
 		}
-		failedServer := &StudyServer{Store: failedStore}
+		failedServer := NewStudyServer(failedStore)
 		request, err := http.NewRequest(http.MethodGet, "/tracker/tdd", nil)
 		assert.NoError(t, err)
 		response := httptest.NewRecorder()
@@ -151,7 +151,7 @@ func TestPostHoursToSubject(t *testing.T) {
 				recordCall: []string{},
 				err:        tt.expectedErr,
 			}
-			server := &StudyServer{store}
+			server := NewStudyServer(store)
 			request, err := http.NewRequest(http.MethodPost, tt.path, nil)
 			if err != nil {
 				t.Fatal(err)
@@ -170,7 +170,7 @@ func TestMethodNotAllowed(t *testing.T) {
 	store := &StubSubjectStore{
 		hours: map[string]int{},
 	}
-	server := &StudyServer{store}
+	server := NewStudyServer(store)
 	t.Run("handle 405", func(t *testing.T) {
 		request, err := http.NewRequest(http.MethodPut, "/tracker/tdd", nil)
 		if err != nil {
@@ -193,7 +193,7 @@ func TestRacePostgresSubjectStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create store: %v", err)
 	}
-	svr := &StudyServer{store}
+	svr := NewStudyServer(store)
 
 	const concurrentRequests = 100
 	const hoursPerRequest = 2
@@ -253,7 +253,7 @@ func TestReport(t *testing.T) {
 	store := &StubSubjectStore{
 		hours: map[string]int{},
 	}
-	server := &StudyServer{Store: store}
+	server := NewStudyServer(store)
 	t.Run("returns 200 on /report", func(t *testing.T) {
 		request, err := http.NewRequest(http.MethodGet, "/report", nil)
 		assert.NoError(t, err)
