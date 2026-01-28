@@ -17,7 +17,7 @@ const jsonContentType = "application/json"
 type SubjectStore interface {
 	GetHours(subject string) (int, error)
 	RecordHour(subject string, numHours int) error
-	GetReport() ([]domain.StudyActivity, error)
+	GetReport() (domain.Report, error)
 }
 
 type StudyServer struct {

@@ -77,9 +77,9 @@ func TestRecordAndGetHours(t *testing.T) {
 			t.Fatalf("failed to truncate table 'subjects': %v", err)
 		}
 
-		testData := []domain.StudyActivity{
-			{Subject: "Docker", Hours: 4},
+		testData := domain.Report{
 			{Subject: "TDD", Hours: 6},
+			{Subject: "Docker", Hours: 4},
 		}
 
 		for _, v := range testData {
@@ -91,6 +91,6 @@ func TestRecordAndGetHours(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.True(t, len(report) > 0, "report slice should contain smth")
-		assert.ElementsMatch(t, testData, report)
+		assert.Equal(t, testData, report)
 	})
 }

@@ -78,14 +78,14 @@ func (ps *PostgresSubjectStore) RecordHour(subject string, numHours int) error {
 	return nil
 }
 
-func (ps *PostgresSubjectStore) GetReport() ([]domain.StudyActivity, error) {
-	rows, err := ps.db.Query("SELECT subject, hours FROM subjects")
+func (ps *PostgresSubjectStore) GetReport() (domain.Report, error) {
+	rows, err := ps.db.Query("SELECT subject, hours FROM subjects ORDER BY hours DESC")
 	if err != nil {
 		return nil, fmt.Errorf("failed to make query from subjects: %w", err)
 	}
 	defer rows.Close()
 
-	report := make([]domain.StudyActivity, 0)
+	report := make(domain.Report, 0)
 	for rows.Next() {
 		var sa domain.StudyActivity
 		err = rows.Scan(&sa.Subject, &sa.Hours)

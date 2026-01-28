@@ -20,7 +20,7 @@ import (
 type StubSubjectStore struct {
 	hours      map[string]int
 	recordCall []string
-	report     []domain.StudyActivity
+	report     domain.Report
 	err        error
 }
 
@@ -44,7 +44,7 @@ func (s *StubSubjectStore) GetHours(subject string) (int, error) {
 	return h, nil
 }
 
-func (s *StubSubjectStore) GetReport() ([]domain.StudyActivity, error) {
+func (s *StubSubjectStore) GetReport() (domain.Report, error) {
 	if s.err != nil {
 		return nil, s.err
 	}
@@ -263,7 +263,7 @@ func TestRecordingHoursAndRetrievingThem(t *testing.T) {
 
 func TestReport(t *testing.T) {
 	t.Run("returns 200 on /report", func(t *testing.T) {
-		wantedReport := []domain.StudyActivity{
+		wantedReport := domain.Report{
 			{Subject: "Docker", Hours: 4},
 			{Subject: "TDD", Hours: 6},
 		}
@@ -301,9 +301,9 @@ func TestReport(t *testing.T) {
 	})
 }
 
-func getReportFromResponse(t testing.TB, body io.Reader) []domain.StudyActivity {
+func getReportFromResponse(t testing.TB, body io.Reader) domain.Report {
 	t.Helper()
-	var report []domain.StudyActivity
+	var report domain.Report
 	err := json.NewDecoder(body).Decode(&report)
 	if err != nil {
 		t.Fatalf("Unable to parse response from server %q into slice of StudyActivity, '%v'", body, err)
