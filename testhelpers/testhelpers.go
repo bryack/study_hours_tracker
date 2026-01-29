@@ -24,6 +24,9 @@ func (s *StubSubjectStore) RecordHour(subject string, numHours int) error {
 	if s.Err != nil {
 		return s.Err
 	}
+	if s.Hours == nil {
+		s.Hours = make(map[string]int)
+	}
 	s.RecordCall = append(s.RecordCall, subject)
 	s.Hours[subject] += numHours
 	return nil

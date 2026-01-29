@@ -9,22 +9,17 @@ import (
 	"strings"
 
 	"github.com/bryack/study_hours_tracker/domain"
+	"github.com/bryack/study_hours_tracker/store"
 )
 
 const jsonContentType = "application/json"
 
-type SubjectStore interface {
-	GetHours(subject string) (int, error)
-	RecordHour(subject string, numHours int) error
-	GetReport() (domain.Report, error)
-}
-
 type StudyServer struct {
-	Store SubjectStore
+	Store store.SubjectStore
 	http.Handler
 }
 
-func NewStudyServer(store SubjectStore) *StudyServer {
+func NewStudyServer(store store.SubjectStore) *StudyServer {
 	s := &StudyServer{}
 
 	s.Store = store

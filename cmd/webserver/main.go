@@ -18,9 +18,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not connect to database: %v", err)
 	}
-	svr := &server.StudyServer{
-		Store: store,
-	}
+	svr := server.NewStudyServer(store)
 
 	log.Fatal(http.ListenAndServe(":5000", svr))
 }
