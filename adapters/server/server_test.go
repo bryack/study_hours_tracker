@@ -10,50 +10,16 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/bryack/study_hours_tracker/database"
+	"github.com/bryack/study_hours_tracker/adapters/database"
 	"github.com/bryack/study_hours_tracker/domain"
 	"github.com/bryack/study_hours_tracker/testhelpers"
 
 	"github.com/stretchr/testify/assert"
 )
 
-type StubSubjectStore struct {
-	hours      map[string]int
-	recordCall []string
-	report     domain.Report
-	err        error
-}
-
-func (s *StubSubjectStore) RecordHour(subject string, numHours int) error {
-	if s.err != nil {
-		return s.err
-	}
-	s.recordCall = append(s.recordCall, subject)
-	s.hours[subject] += numHours
-	return nil
-}
-
-func (s *StubSubjectStore) GetHours(subject string) (int, error) {
-	if s.err != nil {
-		return 0, s.err
-	}
-	h, ok := s.hours[subject]
-	if !ok {
-		return 0, database.ErrSubjectNotFound
-	}
-	return h, nil
-}
-
-func (s *StubSubjectStore) GetReport() (domain.Report, error) {
-	if s.err != nil {
-		return nil, s.err
-	}
-	return s.report, nil
-}
-
 func TestGETSubjects(t *testing.T) {
-	store := &StubSubjectStore{
-		hours: map[string]int{
+	store := &testhelpers.StubSubjectStore{
+		Hours: map[string]int{
 			"tdd":  20,
 			"http": 10,
 		},
@@ -99,8 +65,8 @@ func TestGETSubjects(t *testing.T) {
 	})
 
 	t.Run("returns 500 when store fails", func(t *testing.T) {
-		failedStore := &StubSubjectStore{
-			err: errors.New("database connection lost"),
+		failedStore := &testhelpers.StubSubjectStore{
+			Err: errors.New("database connection lost"),
 		}
 		failedServer := NewStudyServer(failedStore)
 		request, err := http.NewRequest(http.MethodGet, "/tracker/tdd", nil)
@@ -158,10 +124,10 @@ func TestPostHoursToSubject(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			store := &StubSubjectStore{
-				hours:      map[string]int{},
-				recordCall: []string{},
-				err:        tt.expectedErr,
+			store := &testhelpers.StubSubjectStore{
+				Hours:      map[string]int{},
+				RecordCall: []string{},
+				Err:        tt.expectedErr,
 			}
 			server := NewStudyServer(store)
 			request, err := http.NewRequest(http.MethodPost, tt.path, nil)
@@ -172,15 +138,15 @@ func TestPostHoursToSubject(t *testing.T) {
 			server.ServeHTTP(response, request)
 
 			assert.Equal(t, tt.expectedCode, response.Code)
-			assert.Equal(t, tt.subjectsSlice, store.recordCall)
-			assert.Equal(t, tt.numHours, store.hours["tdd"])
+			assert.Equal(t, tt.subjectsSlice, store.RecordCall)
+			assert.Equal(t, tt.numHours, store.Hours["tdd"])
 		})
 	}
 }
 
 func TestMethodNotAllowed(t *testing.T) {
-	store := &StubSubjectStore{
-		hours: map[string]int{},
+	store := &testhelpers.StubSubjectStore{
+		Hours: map[string]int{},
 	}
 	server := NewStudyServer(store)
 	t.Run("handle 405", func(t *testing.T) {
@@ -267,8 +233,8 @@ func TestReport(t *testing.T) {
 			{Subject: "Docker", Hours: 4},
 			{Subject: "TDD", Hours: 6},
 		}
-		store := &StubSubjectStore{
-			report: wantedReport,
+		store := &testhelpers.StubSubjectStore{
+			Report: wantedReport,
 		}
 		server := NewStudyServer(store)
 		request, err := http.NewRequest(http.MethodGet, "/report", nil)
@@ -285,9 +251,9 @@ func TestReport(t *testing.T) {
 
 	})
 	t.Run("handle 500", func(t *testing.T) {
-		store := &StubSubjectStore{
-			hours: map[string]int{},
-			err:   errors.New("database connection failed"),
+		store := &testhelpers.StubSubjectStore{
+			Hours: map[string]int{},
+			Err:   errors.New("database connection failed"),
 		}
 		server := NewStudyServer(store)
 

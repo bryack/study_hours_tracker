@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bryack/study_hours_tracker/database"
 	"github.com/bryack/study_hours_tracker/domain"
 )
 
@@ -65,7 +64,7 @@ func (s *StudyServer) trackerHandler(w http.ResponseWriter, r *http.Request) {
 func (s *StudyServer) processGetRequest(w http.ResponseWriter, subject string) {
 	hours, err := s.Store.GetHours(subject)
 	if err != nil {
-		if errors.Is(err, database.ErrSubjectNotFound) {
+		if errors.Is(err, domain.ErrSubjectNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}

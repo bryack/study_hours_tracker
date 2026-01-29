@@ -67,7 +67,7 @@ func TestRecordAndGetHours(t *testing.T) {
 
 	t.Run("get hours for nonexistent subject", func(t *testing.T) {
 		h, err := store.GetHours("nonexistent")
-		assert.ErrorIs(t, err, ErrSubjectNotFound)
+		assert.ErrorIs(t, err, domain.ErrSubjectNotFound)
 		assert.Equal(t, 0, h)
 	})
 

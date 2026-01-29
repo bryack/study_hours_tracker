@@ -9,8 +9,6 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-var ErrSubjectNotFound = errors.New("subject not found")
-
 type PostgresSubjectStore struct {
 	db *sql.DB
 }
@@ -59,7 +57,7 @@ func (ps *PostgresSubjectStore) GetHours(subject string) (int, error) {
 	err := ps.db.QueryRow("SELECT hours FROM subjects WHERE subject = $1", subject).Scan(&hours)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return 0, ErrSubjectNotFound
+			return 0, domain.ErrSubjectNotFound
 		}
 		return 0, fmt.Errorf("failed to make DB query for subject %s: %w", subject, err)
 	}

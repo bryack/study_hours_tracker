@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/bryack/study_hours_tracker/database"
-	"github.com/bryack/study_hours_tracker/server"
+	"github.com/bryack/study_hours_tracker/adapters/database"
+	"github.com/bryack/study_hours_tracker/adapters/server"
 )
 
 func main() {
