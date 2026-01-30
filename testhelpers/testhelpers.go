@@ -17,12 +17,16 @@ type StubSubjectStore struct {
 	Hours      map[string]int
 	RecordCall []string
 	Report     domain.Report
-	Err        error
+
+	// Method-specific errors
+	RecordHourErr error
+	GetHoursErr   error
+	GetReportErr  error
 }
 
 func (s *StubSubjectStore) RecordHour(subject string, numHours int) error {
-	if s.Err != nil {
-		return s.Err
+	if s.RecordHourErr != nil {
+		return s.RecordHourErr
 	}
 	if s.Hours == nil {
 		s.Hours = make(map[string]int)
@@ -33,8 +37,8 @@ func (s *StubSubjectStore) RecordHour(subject string, numHours int) error {
 }
 
 func (s *StubSubjectStore) GetHours(subject string) (int, error) {
-	if s.Err != nil {
-		return 0, s.Err
+	if s.GetHoursErr != nil {
+		return 0, s.GetHoursErr
 	}
 	h, ok := s.Hours[subject]
 	if !ok {
@@ -44,8 +48,8 @@ func (s *StubSubjectStore) GetHours(subject string) (int, error) {
 }
 
 func (s *StubSubjectStore) GetReport() (domain.Report, error) {
-	if s.Err != nil {
-		return nil, s.Err
+	if s.GetReportErr != nil {
+		return nil, s.GetReportErr
 	}
 	return s.Report, nil
 }

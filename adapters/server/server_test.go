@@ -66,7 +66,7 @@ func TestGETSubjects(t *testing.T) {
 
 	t.Run("returns 500 when store fails", func(t *testing.T) {
 		failedStore := &testhelpers.StubSubjectStore{
-			Err: errors.New("database connection lost"),
+			GetHoursErr: errors.New("database connection lost"),
 		}
 		failedServer := NewStudyServer(failedStore)
 		request, err := http.NewRequest(http.MethodGet, "/tracker/tdd", nil)
@@ -86,7 +86,7 @@ func TestPostHoursToSubject(t *testing.T) {
 		subjectsSlice []string
 		numHours      int
 		expectedCode  int
-		expectedErr   error
+		recordHourErr error
 	}{
 		{
 			name:          "record TDD hours as positive number",
@@ -94,7 +94,7 @@ func TestPostHoursToSubject(t *testing.T) {
 			subjectsSlice: []string{"tdd"},
 			numHours:      5,
 			expectedCode:  202,
-			expectedErr:   nil,
+			recordHourErr: nil,
 		},
 		{
 			name:          "record http hours as string",
@@ -102,7 +102,7 @@ func TestPostHoursToSubject(t *testing.T) {
 			subjectsSlice: []string{},
 			numHours:      0,
 			expectedCode:  400,
-			expectedErr:   nil,
+			recordHourErr: nil,
 		},
 		{
 			name:          "record http hours as negative number",
@@ -110,7 +110,7 @@ func TestPostHoursToSubject(t *testing.T) {
 			subjectsSlice: []string{},
 			numHours:      0,
 			expectedCode:  400,
-			expectedErr:   nil,
+			recordHourErr: nil,
 		},
 		{
 			name:          "expected 500",
@@ -118,16 +118,24 @@ func TestPostHoursToSubject(t *testing.T) {
 			subjectsSlice: []string{},
 			numHours:      0,
 			expectedCode:  500,
-			expectedErr:   errors.New("persistent storage failure"),
+			recordHourErr: errors.New("persistent storage failure"),
+		},
+		{
+			name:          "empty subject",
+			path:          "/tracker/?hours=2",
+			subjectsSlice: []string{},
+			numHours:      0,
+			expectedCode:  400,
+			recordHourErr: nil,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			store := &testhelpers.StubSubjectStore{
-				Hours:      map[string]int{},
-				RecordCall: []string{},
-				Err:        tt.expectedErr,
+				Hours:         map[string]int{},
+				RecordCall:    []string{},
+				RecordHourErr: tt.recordHourErr,
 			}
 			server := NewStudyServer(store)
 			request, err := http.NewRequest(http.MethodPost, tt.path, nil)
@@ -252,8 +260,8 @@ func TestReport(t *testing.T) {
 	})
 	t.Run("handle 500", func(t *testing.T) {
 		store := &testhelpers.StubSubjectStore{
-			Hours: map[string]int{},
-			Err:   errors.New("database connection failed"),
+			Hours:        map[string]int{},
+			GetReportErr: errors.New("database connection failed"),
 		}
 		server := NewStudyServer(store)
 

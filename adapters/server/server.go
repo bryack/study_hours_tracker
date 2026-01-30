@@ -53,6 +53,11 @@ func (s *StudyServer) reportHandler(w http.ResponseWriter, r *http.Request) {
 func (s *StudyServer) trackerHandler(w http.ResponseWriter, r *http.Request) {
 	subject := strings.TrimPrefix(r.URL.Path, trackerPath)
 
+	if strings.TrimSpace(subject) == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	switch r.Method {
 	case http.MethodPost:
 		s.processPostRequest(w, r, subject)
