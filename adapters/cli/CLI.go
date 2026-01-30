@@ -11,20 +11,19 @@ import (
 
 type CLI struct {
 	store store.SubjectStore
-	in    io.Reader
+	in    *bufio.Scanner
 }
 
 func NewCLI(store store.SubjectStore, in io.Reader) *CLI {
 	return &CLI{
 		store: store,
-		in:    in,
+		in:    bufio.NewScanner(in),
 	}
 }
 
 func (cli *CLI) Run() {
-	reader := bufio.NewScanner(cli.in)
-	reader.Scan()
-	cli.store.RecordHour(extractSubjectAndHours(reader.Text()))
+	cli.in.Scan()
+	cli.store.RecordHour(extractSubjectAndHours(cli.in.Text()))
 }
 
 func extractSubjectAndHours(userInput string) (string, int) {
