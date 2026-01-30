@@ -47,5 +47,8 @@ func extractSubjectAndHours(userInput string) (string, int, error) {
 	if err != nil {
 		return "", 0, fmt.Errorf("%w %v: %v", ErrInvalidHours, str[1], err)
 	}
+	if h <= 0 {
+		return "", 0, fmt.Errorf("%w %d, should be 1 or more: %v", ErrInvalidHours, h, err)
+	}
 	return str[0], h, nil
 }

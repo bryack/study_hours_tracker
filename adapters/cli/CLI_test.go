@@ -45,6 +45,13 @@ func TestCLI(t *testing.T) {
 			expectedHours:   0,
 			expectedErr:     cli.ErrNotEnoughArgs,
 		},
+		{
+			name:            "negative number of hours",
+			input:           "bufio -2",
+			expectedSubject: "",
+			expectedHours:   0,
+			expectedErr:     cli.ErrInvalidHours,
+		},
 	}
 
 	for _, tt := range tests {

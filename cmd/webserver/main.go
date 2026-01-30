@@ -8,6 +8,8 @@ import (
 	"github.com/bryack/study_hours_tracker/adapters/server"
 )
 
+const defaultPort = ":5000"
+
 func main() {
 	store, err := database.SetupPostgres()
 	if err != nil {
@@ -16,5 +18,5 @@ func main() {
 
 	svr := server.NewStudyServer(store)
 
-	log.Fatal(http.ListenAndServe(":5000", svr))
+	log.Fatal(http.ListenAndServe(defaultPort, svr))
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,7 +13,11 @@ import (
 	"github.com/bryack/study_hours_tracker/store"
 )
 
-const jsonContentType = "application/json"
+const (
+	jsonContentType = "application/json"
+	reportPath      = "/report"
+	trackerPath     = "/tracker/"
+)
 
 type StudyServer struct {
 	Store store.SubjectStore
@@ -25,8 +30,8 @@ func NewStudyServer(store store.SubjectStore) *StudyServer {
 	s.Store = store
 
 	router := http.NewServeMux()
-	router.Handle("/report", http.HandlerFunc(s.reportHandler))
-	router.Handle("/tracker/", http.HandlerFunc(s.trackerHandler))
+	router.Handle(reportPath, http.HandlerFunc(s.reportHandler))
+	router.Handle(trackerPath, http.HandlerFunc(s.trackerHandler))
 
 	s.Handler = router
 
@@ -40,11 +45,13 @@ func (s *StudyServer) reportHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("content-type", jsonContentType)
-	json.NewEncoder(w).Encode(studyActivities)
+	if err := json.NewEncoder(w).Encode(studyActivities); err != nil {
+		log.Println("failed to encode:", err)
+	}
 }
 
 func (s *StudyServer) trackerHandler(w http.ResponseWriter, r *http.Request) {
-	subject := strings.TrimPrefix(r.URL.Path, "/tracker/")
+	subject := strings.TrimPrefix(r.URL.Path, trackerPath)
 
 	switch r.Method {
 	case http.MethodPost:

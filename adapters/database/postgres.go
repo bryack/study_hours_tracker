@@ -9,6 +9,21 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+const (
+	createTableQuery = `CREATE TABLE IF NOT EXISTS subjects (
+	id SERIAL PRIMARY KEY,
+	subject TEXT NOT NULL UNIQUE,
+	hours INTEGER NOT NULL DEFAULT 0
+	);`
+	selectHoursQuery = "SELECT hours FROM subjects WHERE subject = $1"
+	insertHoursQuery = `INSERT INTO subjects (subject, hours) 
+	VALUES ($1, $2)
+	ON CONFLICT (subject)
+	DO UPDATE SET hours = subjects.hours + EXCLUDED.hours`
+	selectReportQuery = "SELECT subject, hours FROM subjects ORDER BY hours DESC"
+	driverName        = "pgx"
+)
+
 type PostgresSubjectStore struct {
 	db *sql.DB
 }
@@ -26,7 +41,7 @@ func NewPostgresSubjectStore(connStr string) (*PostgresSubjectStore, error) {
 }
 
 func (ps *PostgresSubjectStore) initDatabase(connStr string) error {
-	db, err := sql.Open("pgx", connStr)
+	db, err := sql.Open(driverName, connStr)
 	if err != nil {
 		return fmt.Errorf("failed to open DB with %q: %w", connStr, err)
 	}
@@ -40,13 +55,7 @@ func (ps *PostgresSubjectStore) initDatabase(connStr string) error {
 }
 
 func (ps *PostgresSubjectStore) createTable() error {
-	query := `CREATE TABLE IF NOT EXISTS subjects (
-	id SERIAL PRIMARY KEY,
-	subject TEXT NOT NULL UNIQUE,
-	hours INTEGER NOT NULL DEFAULT 0
-	);`
-
-	if _, err := ps.db.Exec(query); err != nil {
+	if _, err := ps.db.Exec(createTableQuery); err != nil {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
 	return nil
@@ -54,7 +63,7 @@ func (ps *PostgresSubjectStore) createTable() error {
 
 func (ps *PostgresSubjectStore) GetHours(subject string) (int, error) {
 	var hours int
-	err := ps.db.QueryRow("SELECT hours FROM subjects WHERE subject = $1", subject).Scan(&hours)
+	err := ps.db.QueryRow(selectHoursQuery, subject).Scan(&hours)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return 0, domain.ErrSubjectNotFound
@@ -65,19 +74,14 @@ func (ps *PostgresSubjectStore) GetHours(subject string) (int, error) {
 }
 
 func (ps *PostgresSubjectStore) RecordHour(subject string, numHours int) error {
-	query := `INSERT INTO subjects (subject, hours) 
-	VALUES ($1, $2)
-	ON CONFLICT (subject)
-	DO UPDATE SET hours = subjects.hours + EXCLUDED.hours`
-
-	if _, err := ps.db.Exec(query, subject, numHours); err != nil {
+	if _, err := ps.db.Exec(insertHoursQuery, subject, numHours); err != nil {
 		return fmt.Errorf("failed to insert %s: %w", subject, err)
 	}
 	return nil
 }
 
 func (ps *PostgresSubjectStore) GetReport() (domain.Report, error) {
-	rows, err := ps.db.Query("SELECT subject, hours FROM subjects ORDER BY hours DESC")
+	rows, err := ps.db.Query(selectReportQuery)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make query from subjects: %w", err)
 	}
