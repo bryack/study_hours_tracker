@@ -12,6 +12,8 @@ import (
 	"github.com/bryack/study_hours_tracker/store"
 )
 
+const GretingString = "Let's study\nType {subject} {hours} to track hours\nOr type 'pomodoro' {subject} to use pomodoro tracker"
+
 var (
 	ErrNotEnoughArgs = errors.New("should be 2 arguments")
 	ErrInvalidHours  = errors.New("failed to parse hours")
@@ -44,6 +46,7 @@ func NewCLI(store store.SubjectStore, in io.Reader, out io.Writer, sleeper Sleep
 }
 
 func (cli *CLI) Run() error {
+	fmt.Fprintln(cli.out, GretingString)
 	cli.in.Scan()
 	s, h, d, err := extractSubjectAndHours(cli.in.Text())
 	if err != nil {

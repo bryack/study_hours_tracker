@@ -32,7 +32,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:            "record 'cli' hours",
 			input:           "cli 3",
-			expectedOut:     "",
+			expectedOut:     cli.GretingString,
 			expectedSubject: "cli",
 			expectedHours:   3,
 			expectedSleep:   0,
@@ -41,7 +41,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:            "record 'bash' hours",
 			input:           "bash 5",
-			expectedOut:     "",
+			expectedOut:     cli.GretingString,
 			expectedSubject: "bash",
 			expectedHours:   5,
 			expectedSleep:   0,
@@ -50,7 +50,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:            "handle parsing errors",
 			input:           "bufio five",
-			expectedOut:     "",
+			expectedOut:     cli.GretingString,
 			expectedSubject: "",
 			expectedHours:   0,
 			expectedSleep:   0,
@@ -59,7 +59,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:            "not enough arguments",
 			input:           "bufio",
-			expectedOut:     "",
+			expectedOut:     cli.GretingString,
 			expectedSubject: "",
 			expectedHours:   0,
 			expectedSleep:   0,
@@ -68,7 +68,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:            "negative number of hours",
 			input:           "bufio -2",
-			expectedOut:     "",
+			expectedOut:     cli.GretingString,
 			expectedSubject: "",
 			expectedHours:   0,
 			expectedSleep:   0,
@@ -77,7 +77,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:            "start pomodoro for tdd",
 			input:           "pomodoro tdd",
-			expectedOut:     "Pomodoro started...",
+			expectedOut:     cli.GretingString + "\nPomodoro started...",
 			expectedSubject: "tdd",
 			expectedHours:   1,
 			expectedSleep:   25 * time.Minute,

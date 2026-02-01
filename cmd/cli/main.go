@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -10,9 +9,6 @@ import (
 )
 
 func main() {
-	fmt.Println("Let's study")
-	fmt.Println("Type {subject} {hours} to track hours")
-
 	store, err := database.SetupPostgres()
 	if err != nil {
 		log.Fatal(err)
