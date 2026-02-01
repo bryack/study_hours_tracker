@@ -47,18 +47,25 @@ func NewCLI(store store.SubjectStore, in io.Reader, out io.Writer, sleeper Sleep
 
 func (cli *CLI) Run() error {
 	fmt.Fprintln(cli.out, GretingString)
-	cli.in.Scan()
-	s, h, d, err := extractSubjectAndHours(cli.in.Text())
-	if err != nil {
-		return fmt.Errorf("failed to extract subject and hours: %w", err)
+
+	for cli.in.Scan() {
+		s, h, d, err := extractSubjectAndHours(cli.in.Text())
+		if err != nil {
+			fmt.Fprintf(cli.out, "failed to extract subject and hours: %v\n", err)
+			continue
+		}
+
+		if d > 0 {
+			fmt.Fprintln(cli.out, "Pomodoro started...")
+			cli.sleeper.Sleep(d)
+		}
+		cli.store.RecordHour(s, h)
 	}
 
-	if d > 0 {
-		fmt.Fprintln(cli.out, "Pomodoro started...")
-		cli.sleeper.Sleep(d)
+	if err := cli.in.Err(); err != nil {
+		return fmt.Errorf("failed to read input: %w", err)
 	}
 
-	cli.store.RecordHour(s, h)
 	return nil
 }
 
