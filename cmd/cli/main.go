@@ -18,6 +18,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	tracker := cli.NewCLI(store, os.Stdin)
+	sleeper := &cli.PomodoroSleeper{}
+
+	tracker := cli.NewCLI(store, os.Stdin, sleeper)
 	tracker.Run()
 }

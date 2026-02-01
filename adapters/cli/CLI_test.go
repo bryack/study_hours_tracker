@@ -3,11 +3,20 @@ package cli_test
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/bryack/study_hours_tracker/adapters/cli"
 	"github.com/bryack/study_hours_tracker/testhelpers"
 	"github.com/stretchr/testify/assert"
 )
+
+type SpySleeper struct {
+	DurationSlept time.Duration
+}
+
+func (s *SpySleeper) Sleep(duration time.Duration) {
+	s.DurationSlept = duration
+}
 
 func TestCLI(t *testing.T) {
 	tests := []struct {
@@ -15,6 +24,7 @@ func TestCLI(t *testing.T) {
 		input           string
 		expectedSubject string
 		expectedHours   int
+		expectedSleep   time.Duration
 		expectedErr     error
 	}{
 		{
@@ -22,6 +32,7 @@ func TestCLI(t *testing.T) {
 			input:           "cli 3",
 			expectedSubject: "cli",
 			expectedHours:   3,
+			expectedSleep:   0,
 			expectedErr:     nil,
 		},
 		{
@@ -29,6 +40,7 @@ func TestCLI(t *testing.T) {
 			input:           "bash 5",
 			expectedSubject: "bash",
 			expectedHours:   5,
+			expectedSleep:   0,
 			expectedErr:     nil,
 		},
 		{
@@ -36,6 +48,7 @@ func TestCLI(t *testing.T) {
 			input:           "bufio five",
 			expectedSubject: "",
 			expectedHours:   0,
+			expectedSleep:   0,
 			expectedErr:     cli.ErrInvalidHours,
 		},
 		{
@@ -43,6 +56,7 @@ func TestCLI(t *testing.T) {
 			input:           "bufio",
 			expectedSubject: "",
 			expectedHours:   0,
+			expectedSleep:   0,
 			expectedErr:     cli.ErrNotEnoughArgs,
 		},
 		{
@@ -50,7 +64,16 @@ func TestCLI(t *testing.T) {
 			input:           "bufio -2",
 			expectedSubject: "",
 			expectedHours:   0,
+			expectedSleep:   0,
 			expectedErr:     cli.ErrInvalidHours,
+		},
+		{
+			name:            "start pomodoro for tdd",
+			input:           "pomodoro tdd",
+			expectedSubject: "tdd",
+			expectedHours:   1,
+			expectedSleep:   25 * time.Minute,
+			expectedErr:     nil,
 		},
 	}
 
@@ -61,11 +84,13 @@ func TestCLI(t *testing.T) {
 			store := &testhelpers.StubSubjectStore{
 				Hours: map[string]int{},
 			}
-			trackerCLI := cli.NewCLI(store, in)
+			sleeper := &SpySleeper{}
+			trackerCLI := cli.NewCLI(store, in, sleeper)
 			err := trackerCLI.Run()
 
 			assert.ErrorIs(t, err, tt.expectedErr)
 			assertRecordTracker(t, store, tt.expectedSubject, tt.expectedHours, tt.expectedErr)
+			assert.Equal(t, tt.expectedSleep, sleeper.DurationSlept)
 		})
 	}
 }
