@@ -1,6 +1,7 @@
 package cli_test
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 	"time"
@@ -22,6 +23,7 @@ func TestCLI(t *testing.T) {
 	tests := []struct {
 		name            string
 		input           string
+		expectedOut     string
 		expectedSubject string
 		expectedHours   int
 		expectedSleep   time.Duration
@@ -30,6 +32,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:            "record 'cli' hours",
 			input:           "cli 3",
+			expectedOut:     "",
 			expectedSubject: "cli",
 			expectedHours:   3,
 			expectedSleep:   0,
@@ -38,6 +41,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:            "record 'bash' hours",
 			input:           "bash 5",
+			expectedOut:     "",
 			expectedSubject: "bash",
 			expectedHours:   5,
 			expectedSleep:   0,
@@ -46,6 +50,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:            "handle parsing errors",
 			input:           "bufio five",
+			expectedOut:     "",
 			expectedSubject: "",
 			expectedHours:   0,
 			expectedSleep:   0,
@@ -54,6 +59,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:            "not enough arguments",
 			input:           "bufio",
+			expectedOut:     "",
 			expectedSubject: "",
 			expectedHours:   0,
 			expectedSleep:   0,
@@ -62,6 +68,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:            "negative number of hours",
 			input:           "bufio -2",
+			expectedOut:     "",
 			expectedSubject: "",
 			expectedHours:   0,
 			expectedSleep:   0,
@@ -70,6 +77,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:            "start pomodoro for tdd",
 			input:           "pomodoro tdd",
+			expectedOut:     "Pomodoro started...",
 			expectedSubject: "tdd",
 			expectedHours:   1,
 			expectedSleep:   25 * time.Minute,
@@ -80,16 +88,18 @@ func TestCLI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			in := strings.NewReader(tt.input)
+			out := &bytes.Buffer{}
 
 			store := &testhelpers.StubSubjectStore{
 				Hours: map[string]int{},
 			}
 			sleeper := &SpySleeper{}
-			trackerCLI := cli.NewCLI(store, in, sleeper)
+			trackerCLI := cli.NewCLI(store, in, out, sleeper)
 			err := trackerCLI.Run()
 
 			assert.ErrorIs(t, err, tt.expectedErr)
 			assertRecordTracker(t, store, tt.expectedSubject, tt.expectedHours, tt.expectedErr)
+			assert.Equal(t, tt.expectedOut, strings.TrimSpace(out.String()))
 			assert.Equal(t, tt.expectedSleep, sleeper.DurationSlept)
 		})
 	}

@@ -24,6 +24,7 @@ type Sleeper interface {
 type CLI struct {
 	store   store.SubjectStore
 	in      *bufio.Scanner
+	out     io.Writer
 	sleeper Sleeper
 }
 
@@ -33,10 +34,11 @@ func (ps *PomodoroSleeper) Sleep(duration time.Duration) {
 	time.Sleep(duration)
 }
 
-func NewCLI(store store.SubjectStore, in io.Reader, sleeper Sleeper) *CLI {
+func NewCLI(store store.SubjectStore, in io.Reader, out io.Writer, sleeper Sleeper) *CLI {
 	return &CLI{
 		store:   store,
 		in:      bufio.NewScanner(in),
+		out:     out,
 		sleeper: sleeper,
 	}
 }
@@ -49,6 +51,7 @@ func (cli *CLI) Run() error {
 	}
 
 	if d > 0 {
+		fmt.Fprintln(cli.out, "Pomodoro started...")
 		cli.sleeper.Sleep(d)
 	}
 
