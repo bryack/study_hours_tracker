@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bryack/study_hours_tracker/domain/pomodoro"
 	"github.com/bryack/study_hours_tracker/store"
 )
 
@@ -19,15 +20,11 @@ var (
 	ErrInvalidHours  = errors.New("failed to parse hours")
 )
 
-type Sleeper interface {
-	Sleep(duration time.Duration)
-}
-
 type CLI struct {
-	store   store.SubjectStore
-	in      *bufio.Scanner
-	out     io.Writer
-	sleeper Sleeper
+	store    store.SubjectStore
+	in       *bufio.Scanner
+	out      io.Writer
+	pomodoro *pomodoro.Pomodoro
 }
 
 type PomodoroSleeper struct{}
@@ -36,12 +33,12 @@ func (ps *PomodoroSleeper) Sleep(duration time.Duration) {
 	time.Sleep(duration)
 }
 
-func NewCLI(store store.SubjectStore, in io.Reader, out io.Writer, sleeper Sleeper) *CLI {
+func NewCLI(store store.SubjectStore, in io.Reader, out io.Writer, sleeper pomodoro.Sleeper) *CLI {
 	return &CLI{
-		store:   store,
-		in:      bufio.NewScanner(in),
-		out:     out,
-		sleeper: sleeper,
+		store:    store,
+		in:       bufio.NewScanner(in),
+		out:      out,
+		pomodoro: pomodoro.NewPomodoro(sleeper),
 	}
 }
 
@@ -57,7 +54,7 @@ func (cli *CLI) Run() error {
 
 		if d > 0 {
 			fmt.Fprintln(cli.out, "Pomodoro started...")
-			cli.sleeper.Sleep(d)
+			cli.pomodoro.Start()
 		}
 		cli.store.RecordHour(s, h)
 	}

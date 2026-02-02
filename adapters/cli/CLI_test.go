@@ -15,7 +15,7 @@ type SpySleeper struct {
 	DurationSlept time.Duration
 }
 
-func (s *SpySleeper) Sleep(duration time.Duration) {
+func (s *SpySleeper) Wait(duration time.Duration) {
 	s.DurationSlept = duration
 }
 
