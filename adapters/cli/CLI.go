@@ -7,7 +7,6 @@ import (
 	"io"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/bryack/study_hours_tracker/domain/pomodoro"
 	"github.com/bryack/study_hours_tracker/store"
@@ -27,12 +26,6 @@ type CLI struct {
 	pomodoro *pomodoro.Pomodoro
 }
 
-type PomodoroSleeper struct{}
-
-func (ps *PomodoroSleeper) Sleep(duration time.Duration) {
-	time.Sleep(duration)
-}
-
 func NewCLI(store store.SubjectStore, in io.Reader, out io.Writer, sleeper pomodoro.Sleeper) *CLI {
 	return &CLI{
 		store:    store,
@@ -46,13 +39,13 @@ func (cli *CLI) Run() error {
 	fmt.Fprintln(cli.out, GretingString)
 
 	for cli.in.Scan() {
-		s, h, d, err := extractSubjectAndHours(cli.in.Text())
+		s, h, isPomodoro, err := extractSubjectAndHours(cli.in.Text())
 		if err != nil {
 			fmt.Fprintf(cli.out, "failed to extract subject and hours: %v\n", err)
 			continue
 		}
 
-		if d > 0 {
+		if isPomodoro {
 			fmt.Fprintln(cli.out, "Pomodoro started...")
 			cli.pomodoro.Start()
 		}
@@ -66,22 +59,22 @@ func (cli *CLI) Run() error {
 	return nil
 }
 
-func extractSubjectAndHours(userInput string) (string, int, time.Duration, error) {
+func extractSubjectAndHours(userInput string) (subject string, hours int, isPomodoro bool, err error) {
 	args := strings.Split(userInput, " ")
 	if len(args) < 2 {
-		return "", 0, 0, fmt.Errorf("failed to parse: %w, got: %d", ErrNotEnoughArgs, len(args))
+		return "", 0, false, fmt.Errorf("failed to parse: %w, got: %d", ErrNotEnoughArgs, len(args))
 	}
 
 	if args[0] == "pomodoro" {
-		return args[1], 1, 25 * time.Minute, nil
+		return args[1], 1, true, nil
 	}
 
 	h, err := strconv.Atoi(args[1])
 	if err != nil {
-		return "", 0, 0, fmt.Errorf("%w %v: %v", ErrInvalidHours, args[1], err)
+		return "", 0, false, fmt.Errorf("%w %v: %v", ErrInvalidHours, args[1], err)
 	}
 	if h <= 0 {
-		return "", 0, 0, fmt.Errorf("%w %d, should be 1 or more: %v", ErrInvalidHours, h, err)
+		return "", 0, false, fmt.Errorf("%w %d, should be 1 or more: %v", ErrInvalidHours, h, err)
 	}
-	return args[0], h, 0, nil
+	return args[0], h, false, nil
 }
