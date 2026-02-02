@@ -12,9 +12,9 @@ type SpySleeper struct {
 	Duration   time.Duration
 }
 
-func (s *SpySleeper) Wait() {
+func (s *SpySleeper) Wait(duration time.Duration) {
 	s.WaitCalled++
-	s.Duration = 25 * time.Minute
+	s.Duration = duration
 }
 
 func TestPomodoro(t *testing.T) {
@@ -23,6 +23,6 @@ func TestPomodoro(t *testing.T) {
 		p := NewPomodoro(sleeper)
 		p.Start()
 		assert.Equal(t, 1, sleeper.WaitCalled)
-		assert.Equal(t, 25*time.Minute, sleeper.Duration)
+		assert.Equal(t, p.duration, sleeper.Duration)
 	})
 }
