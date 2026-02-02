@@ -1,9 +1,7 @@
 package pomodoro
 
-import "time"
-
 type Sleeper interface {
-	Wait(duration time.Duration)
+	Wait()
 }
 
 type Pomodoro struct {
@@ -16,6 +14,6 @@ func NewPomodoro(sleeper Sleeper) *Pomodoro {
 	}
 }
 
-func (p *Pomodoro) Wait(duration time.Duration) {
-	p.sleeper.Wait(duration)
+func (p *Pomodoro) Start() {
+	p.sleeper.Wait()
 }
