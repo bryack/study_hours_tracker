@@ -25,19 +25,17 @@ var (
 
 // CLI provides an interactive command-line interface for tracking study hours.
 type CLI struct {
-	store          store.SubjectStore
-	in             *bufio.Scanner
-	out            io.Writer
-	pomodoroRunner PomodoroRunner
+	in      *bufio.Scanner
+	out     io.Writer
+	session *StudySession
 }
 
 // NewCLI creates a new CLI with the given dependencies.
 func NewCLI(store store.SubjectStore, in io.Reader, out io.Writer, pomodoroRunner PomodoroRunner) *CLI {
 	return &CLI{
-		store:          store,
-		in:             bufio.NewScanner(in),
-		out:            out,
-		pomodoroRunner: pomodoroRunner,
+		in:      bufio.NewScanner(in),
+		out:     out,
+		session: NewStudySession(store, pomodoroRunner),
 	}
 }
 
@@ -59,11 +57,13 @@ func (cli *CLI) Run() error {
 
 		if isPomodoro {
 			fmt.Fprintln(cli.out, "Pomodoro started...")
-			cli.pomodoroRunner.Start()
-		}
-		if err = cli.store.RecordHour(s, h); err != nil {
-			fmt.Fprintf(cli.out, "failed to record hours: %v\n", err)
-			continue
+			if err := cli.session.RecordPomodoro(s); err != nil {
+				fmt.Fprintf(cli.out, "failed to record pomodoro: %v\n", err)
+			}
+		} else {
+			if err := cli.session.RecordManual(s, h); err != nil {
+				fmt.Fprintf(cli.out, "failed to record hours: %v\n", err)
+			}
 		}
 	}
 
