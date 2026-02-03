@@ -114,7 +114,8 @@ func TestCLI(t *testing.T) {
 			}
 
 			pomodoroSpy := &SpyPomodoroRunner{}
-			trackerCLI := cli.NewCLI(store, in, out, pomodoroSpy)
+			session := cli.NewStudySession(store, pomodoroSpy)
+			trackerCLI := cli.NewCLI(in, out, session)
 			err := trackerCLI.Run()
 
 			assert.NoError(t, err)

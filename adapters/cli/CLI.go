@@ -8,8 +8,6 @@ import (
 	"io"
 	"strconv"
 	"strings"
-
-	"github.com/bryack/study_hours_tracker/store"
 )
 
 const (
@@ -31,11 +29,11 @@ type CLI struct {
 }
 
 // NewCLI creates a new CLI with the given dependencies.
-func NewCLI(store store.SubjectStore, in io.Reader, out io.Writer, pomodoroRunner PomodoroRunner) *CLI {
+func NewCLI(in io.Reader, out io.Writer, session *StudySession) *CLI {
 	return &CLI{
 		in:      bufio.NewScanner(in),
 		out:     out,
-		session: NewStudySession(store, pomodoroRunner),
+		session: session,
 	}
 }
 

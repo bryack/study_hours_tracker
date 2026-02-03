@@ -17,8 +17,8 @@ func main() {
 	}
 
 	pomodoroRunner := domainPomodoro.NewPomodoro(pomodoro.SleeperFunc(pomodoro.PomodoroSleeper))
-
-	tracker := cli.NewCLI(store, os.Stdin, os.Stdout, pomodoroRunner)
+	session := cli.NewStudySession(store, pomodoroRunner)
+	tracker := cli.NewCLI(os.Stdin, os.Stdout, session)
 	if err := tracker.Run(); err != nil {
 		log.Fatal(err)
 	}
