@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	GreetingString  = "Let's study\nType {subject} {hours} to track hours\nOr type 'pomodoro' {subject} to use pomodoro tracker"
+	GreetingString  = "Let's study\nType {subject} {hours} to track hours\nOr type 'pomodoro' {subject} to use pomodoro tracker\nType 'quit' to exit"
 	PomodoroCommand = "pomodoro"
+	QuitCommand     = "quit"
 )
 
 var (
@@ -50,6 +51,11 @@ func (cli *CLI) Run() error {
 	fmt.Fprintln(cli.out, GreetingString)
 
 	for cli.in.Scan() {
+		input := cli.in.Text()
+		if input == QuitCommand {
+			fmt.Fprint(cli.out, "Goodbye!")
+			break
+		}
 		s, h, isPomodoro, err := extractSubjectAndHours(cli.in.Text())
 		if err != nil {
 			fmt.Fprintf(cli.out, "failed to extract subject and hours: %v\n", err)

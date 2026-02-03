@@ -91,6 +91,15 @@ func TestCLI(t *testing.T) {
 			shouldRecord:      true,
 			expectedSpyCalled: 1,
 		},
+		{
+			name:              "quit command exits gracefully",
+			input:             "quit",
+			expectedOut:       cli.GreetingString + "\nGoodbye!\n",
+			expectedSubject:   "",
+			expectedHours:     0,
+			shouldRecord:      false,
+			expectedSpyCalled: 0,
+		},
 	}
 
 	for _, tt := range tests {
