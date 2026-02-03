@@ -23,11 +23,6 @@ var (
 	ErrInvalidHours  = errors.New("failed to parse hours")
 )
 
-// PomodoroRunner represents a timer that can be started for focused study sessions.
-type PomodoroRunner interface {
-	Start()
-}
-
 // CLI provides an interactive command-line interface for tracking study hours.
 type CLI struct {
 	store          store.SubjectStore
@@ -53,7 +48,7 @@ func (cli *CLI) Run() error {
 	for cli.in.Scan() {
 		input := cli.in.Text()
 		if input == QuitCommand {
-			fmt.Fprint(cli.out, "Goodbye!")
+			fmt.Fprintln(cli.out, "Goodbye!")
 			break
 		}
 		s, h, isPomodoro, err := extractSubjectAndHours(cli.in.Text())

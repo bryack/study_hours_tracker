@@ -94,7 +94,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:              "quit command exits gracefully",
 			input:             "quit",
-			expectedOut:       cli.GreetingString + "\nGoodbye!\n",
+			expectedOut:       cli.GreetingString + "\nGoodbye!",
 			expectedSubject:   "",
 			expectedHours:     0,
 			shouldRecord:      false,

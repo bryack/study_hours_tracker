@@ -7,10 +7,15 @@ Track study time across subjects. Built with Go using hexagonal architecture.
 ```bash
 # CLI - Manual recording
 go build -o study-cli ./cmd/cli
-./study-cli math 2
+./study-cli
+# Interactive session starts:
+# Type: math 2
+# Type: physics 1
+# Type: quit
 
 # CLI - Pomodoro timer (25 minutes hardcoded)
-./study-cli pomodoro tdd
+# In interactive session, type:
+# pomodoro tdd
 
 # Web Server (http://localhost:5000)
 go build -o study-server ./cmd/webserver
@@ -19,15 +24,26 @@ go build -o study-server ./cmd/webserver
 
 ## CLI Features
 
+### Interactive Session
+```bash
+./study-cli
+# Starts interactive session with greeting
+# Type commands and press Enter
+# Type 'quit' to exit gracefully
+```
+
 ### Manual Recording
 ```bash
-./study-cli math 2        # Record 2 hours of math study
-./study-cli physics 1     # Record 1 hour of physics study
+# In interactive session:
+math 2        # Record 2 hours of math study
+physics 1     # Record 1 hour of physics study
+quit          # Exit the program
 ```
 
 ### Pomodoro Timer
 ```bash
-./study-cli pomodoro tdd  # Start 25-minute focused session for TDD
+# In interactive session:
+pomodoro tdd  # Start 25-minute focused session for TDD
 # CLI waits 25 minutes, then outputs "Time's up! Take a break."
 # Automatically records 1 hour to database
 ```
