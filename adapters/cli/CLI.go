@@ -19,19 +19,23 @@ var (
 	ErrInvalidHours  = errors.New("failed to parse hours")
 )
 
+type PomodoroRunner interface {
+	Start()
+}
+
 type CLI struct {
-	store    store.SubjectStore
-	in       *bufio.Scanner
-	out      io.Writer
-	pomodoro *pomodoro.Pomodoro
+	store          store.SubjectStore
+	in             *bufio.Scanner
+	out            io.Writer
+	pomodoroRunner PomodoroRunner
 }
 
 func NewCLI(store store.SubjectStore, in io.Reader, out io.Writer, sleeper pomodoro.Sleeper) *CLI {
 	return &CLI{
-		store:    store,
-		in:       bufio.NewScanner(in),
-		out:      out,
-		pomodoro: pomodoro.NewPomodoro(sleeper),
+		store:          store,
+		in:             bufio.NewScanner(in),
+		out:            out,
+		pomodoroRunner: pomodoro.NewPomodoro(sleeper),
 	}
 }
 
@@ -47,7 +51,7 @@ func (cli *CLI) Run() error {
 
 		if isPomodoro {
 			fmt.Fprintln(cli.out, "Pomodoro started...")
-			cli.pomodoro.Start()
+			cli.pomodoroRunner.Start()
 		}
 		cli.store.RecordHour(s, h)
 	}

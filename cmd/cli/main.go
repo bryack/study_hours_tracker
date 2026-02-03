@@ -18,5 +18,7 @@ func main() {
 	sleeper := pomodoro.SleeperFunc(pomodoro.PomodoroSleeper)
 
 	tracker := cli.NewCLI(store, os.Stdin, os.Stdout, sleeper)
-	tracker.Run()
+	if err := tracker.Run(); err != nil {
+		log.Fatal(err)
+	}
 }
