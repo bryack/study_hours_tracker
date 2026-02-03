@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bryack/study_hours_tracker/domain/pomodoro"
 	"github.com/bryack/study_hours_tracker/store"
 )
 
@@ -30,12 +29,12 @@ type CLI struct {
 	pomodoroRunner PomodoroRunner
 }
 
-func NewCLI(store store.SubjectStore, in io.Reader, out io.Writer, sleeper pomodoro.Sleeper) *CLI {
+func NewCLI(store store.SubjectStore, in io.Reader, out io.Writer, pomodoroRunner PomodoroRunner) *CLI {
 	return &CLI{
 		store:          store,
 		in:             bufio.NewScanner(in),
 		out:            out,
-		pomodoroRunner: pomodoro.NewPomodoro(sleeper),
+		pomodoroRunner: pomodoroRunner,
 	}
 }
 
