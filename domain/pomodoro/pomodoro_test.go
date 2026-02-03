@@ -8,21 +8,46 @@ import (
 )
 
 type SpySleeper struct {
-	WaitCalled int
-	Duration   time.Duration
+	WaitCalled   int
+	LastDuration time.Duration
 }
 
 func (s *SpySleeper) Wait(duration time.Duration) {
 	s.WaitCalled++
-	s.Duration = duration
+	s.LastDuration = duration
 }
 
 func TestPomodoro(t *testing.T) {
-	t.Run("pomodoro waits correct time", func(t *testing.T) {
-		sleeper := &SpySleeper{}
-		p := NewPomodoro(sleeper)
-		p.Start()
-		assert.Equal(t, 1, sleeper.WaitCalled)
-		assert.Equal(t, p.duration, sleeper.Duration)
-	})
+	tests := []struct {
+		name             string
+		startCalls       int
+		expectedCalls    int
+		expectedDuration time.Duration
+	}{
+		{
+			name:             "single start waits correct time",
+			startCalls:       1,
+			expectedCalls:    1,
+			expectedDuration: DefaultPomodoroDuration,
+		},
+		{
+			name:             "multiple starts call wait multiple times",
+			startCalls:       3,
+			expectedCalls:    3,
+			expectedDuration: DefaultPomodoroDuration,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			sleeper := &SpySleeper{}
+			p := NewPomodoro(sleeper)
+			for range tt.startCalls {
+				p.Start()
+			}
+			assert.Equal(t, tt.expectedCalls, sleeper.WaitCalled)
+			assert.Equal(t, DefaultPomodoroDuration, sleeper.LastDuration)
+		})
+	}
 }

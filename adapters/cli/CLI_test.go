@@ -11,11 +11,11 @@ import (
 )
 
 type SpyPomodoroRunner struct {
-	SpyCalled int
+	StartCallCount int
 }
 
 func (s *SpyPomodoroRunner) Start() {
-	s.SpyCalled++
+	s.StartCallCount++
 }
 
 func TestCLI(t *testing.T) {
@@ -31,7 +31,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:              "record 'cli' hours",
 			input:             "cli 3",
-			expectedOut:       cli.GretingString,
+			expectedOut:       cli.GreetingString,
 			expectedSubject:   "cli",
 			expectedHours:     3,
 			shouldRecord:      true,
@@ -40,7 +40,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:              "handle parsing errors",
 			input:             "bufio five",
-			expectedOut:       cli.GretingString + "\nfailed to extract subject and hours",
+			expectedOut:       cli.GreetingString + "\nfailed to extract subject and hours",
 			expectedSubject:   "",
 			expectedHours:     0,
 			shouldRecord:      false,
@@ -49,7 +49,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:              "not enough arguments",
 			input:             "bufio",
-			expectedOut:       cli.GretingString + "\nfailed to extract subject and hours",
+			expectedOut:       cli.GreetingString + "\nfailed to extract subject and hours",
 			expectedSubject:   "",
 			expectedHours:     0,
 			shouldRecord:      false,
@@ -58,7 +58,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:              "negative number of hours",
 			input:             "bufio -2",
-			expectedOut:       cli.GretingString + "\nfailed to extract subject and hours",
+			expectedOut:       cli.GreetingString + "\nfailed to extract subject and hours",
 			expectedSubject:   "",
 			expectedHours:     0,
 			shouldRecord:      false,
@@ -67,7 +67,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:              "record multiple sessions",
 			input:             "cli 3\nbash 2",
-			expectedOut:       cli.GretingString,
+			expectedOut:       cli.GreetingString,
 			expectedSubject:   "bash",
 			expectedHours:     2,
 			shouldRecord:      true,
@@ -76,7 +76,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:              "continue after error",
 			input:             "cli 3\ninvalid_data\nbash 2",
-			expectedOut:       cli.GretingString + "\nfailed to extract subject and hours",
+			expectedOut:       cli.GreetingString + "\nfailed to extract subject and hours",
 			expectedSubject:   "bash",
 			expectedHours:     2,
 			shouldRecord:      true,
@@ -85,7 +85,7 @@ func TestCLI(t *testing.T) {
 		{
 			name:              "start pomodoro for tdd",
 			input:             "pomodoro tdd",
-			expectedOut:       cli.GretingString + "\nPomodoro started...",
+			expectedOut:       cli.GreetingString + "\nPomodoro started...",
 			expectedSubject:   "tdd",
 			expectedHours:     1,
 			shouldRecord:      true,
@@ -95,6 +95,7 @@ func TestCLI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			in := strings.NewReader(tt.input)
 			out := &bytes.Buffer{}
 
@@ -110,7 +111,7 @@ func TestCLI(t *testing.T) {
 			assert.NoError(t, err)
 			assertRecordTracker(t, store, tt.expectedSubject, tt.expectedHours, tt.shouldRecord)
 			assert.Contains(t, strings.TrimSpace(out.String()), tt.expectedOut)
-			assert.Equal(t, tt.expectedSpyCalled, pomodoroSpy.SpyCalled)
+			assert.Equal(t, tt.expectedSpyCalled, pomodoroSpy.StartCallCount)
 		})
 	}
 }
@@ -119,12 +120,12 @@ func assertRecordTracker(t testing.TB, store *testhelpers.StubSubjectStore, subj
 	t.Helper()
 
 	if shouldRecord {
-		assert.True(t, len(store.RecordCall) > 0)
+		assert.True(t, len(store.RecordCall) > 0, "expected RecordHour to be called, but it wasn't")
 
-		v, ok := store.Hours[subject]
-		assert.True(t, ok)
-		assert.Equal(t, hours, v)
+		got, ok := store.Hours[subject]
+		assert.True(t, ok, "expected subject %q to be recorded, but it wasn't found", subject)
+		assert.Equal(t, got, hours, "expected %d hours for %q, got %d", hours, subject, got)
 	} else {
-		assert.Equal(t, 0, len(store.RecordCall))
+		assert.Equal(t, 0, len(store.RecordCall), "expected no calls to RecordHour, but got %d calls", len(store.RecordCall))
 	}
 }

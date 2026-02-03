@@ -1,3 +1,4 @@
+// Package cli provides a command-line interface for the study hours tracker.
 package cli
 
 import (
@@ -11,17 +12,22 @@ import (
 	"github.com/bryack/study_hours_tracker/store"
 )
 
-const GretingString = "Let's study\nType {subject} {hours} to track hours\nOr type 'pomodoro' {subject} to use pomodoro tracker"
+const (
+	GreetingString  = "Let's study\nType {subject} {hours} to track hours\nOr type 'pomodoro' {subject} to use pomodoro tracker"
+	PomodoroCommand = "pomodoro"
+)
 
 var (
 	ErrNotEnoughArgs = errors.New("should be 2 arguments")
 	ErrInvalidHours  = errors.New("failed to parse hours")
 )
 
+// PomodoroRunner represents a timer that can be started for focused study sessions.
 type PomodoroRunner interface {
 	Start()
 }
 
+// CLI provides an interactive command-line interface for tracking study hours.
 type CLI struct {
 	store          store.SubjectStore
 	in             *bufio.Scanner
@@ -29,6 +35,7 @@ type CLI struct {
 	pomodoroRunner PomodoroRunner
 }
 
+// NewCLI creates a new CLI with the given dependencies.
 func NewCLI(store store.SubjectStore, in io.Reader, out io.Writer, pomodoroRunner PomodoroRunner) *CLI {
 	return &CLI{
 		store:          store,
@@ -38,8 +45,9 @@ func NewCLI(store store.SubjectStore, in io.Reader, out io.Writer, pomodoroRunne
 	}
 }
 
+// Run starts the interactive CLI loop.
 func (cli *CLI) Run() error {
-	fmt.Fprintln(cli.out, GretingString)
+	fmt.Fprintln(cli.out, GreetingString)
 
 	for cli.in.Scan() {
 		s, h, isPomodoro, err := extractSubjectAndHours(cli.in.Text())
@@ -52,7 +60,10 @@ func (cli *CLI) Run() error {
 			fmt.Fprintln(cli.out, "Pomodoro started...")
 			cli.pomodoroRunner.Start()
 		}
-		cli.store.RecordHour(s, h)
+		if err = cli.store.RecordHour(s, h); err != nil {
+			fmt.Fprintf(cli.out, "failed to record hours: %v\n", err)
+			continue
+		}
 	}
 
 	if err := cli.in.Err(); err != nil {
@@ -68,7 +79,7 @@ func extractSubjectAndHours(userInput string) (subject string, hours int, isPomo
 		return "", 0, false, fmt.Errorf("failed to parse: %w, got: %d", ErrNotEnoughArgs, len(args))
 	}
 
-	if args[0] == "pomodoro" {
+	if args[0] == PomodoroCommand {
 		return args[1], 1, true, nil
 	}
 
