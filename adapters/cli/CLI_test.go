@@ -10,14 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type SpyPomodoroRunner struct {
-	StartCallCount int
-}
-
-func (s *SpyPomodoroRunner) Start() {
-	s.StartCallCount++
-}
-
 func TestCLI(t *testing.T) {
 	tests := []struct {
 		name              string
