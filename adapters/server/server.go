@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/bryack/study_hours_tracker/domain"
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -18,6 +19,7 @@ const (
 	reportPath       = "/report"
 	trackerPath      = "/tracker/"
 	studyPath        = "/study"
+	websocketPath    = "/ws"
 	htmlTemplatePath = "../../study.html"
 )
 
@@ -35,6 +37,7 @@ func NewStudyServer(store domain.SubjectStore) *StudyServer {
 	router.Handle(reportPath, http.HandlerFunc(s.reportHandler))
 	router.Handle(trackerPath, http.HandlerFunc(s.trackerHandler))
 	router.Handle(studyPath, http.HandlerFunc(s.studyHandler))
+	router.Handle(websocketPath, http.HandlerFunc(s.webSocketHandler))
 
 	s.Handler = router
 
@@ -78,6 +81,16 @@ func (s *StudyServer) studyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tmpl.Execute(w, nil)
+}
+
+func (s *StudyServer) webSocketHandler(w http.ResponseWriter, r *http.Request) {
+	upgrader := websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+	conn, _ := upgrader.Upgrade(w, r, nil)
+	_, subjectMsg, _ := conn.ReadMessage()
+	s.Store.RecordHour(string(subjectMsg), 1)
 }
 
 func (s *StudyServer) processGetRequest(w http.ResponseWriter, subject string) {

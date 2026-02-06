@@ -7,12 +7,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/bryack/study_hours_tracker/adapters/database"
 	"github.com/bryack/study_hours_tracker/domain"
 	"github.com/bryack/study_hours_tracker/testhelpers"
+	"github.com/gorilla/websocket"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -296,6 +299,26 @@ func TestStudy(t *testing.T) {
 		server.ServeHTTP(response, request)
 
 		assert.Equal(t, http.StatusOK, response.Code)
+	})
+	t.Run("upgrade to websocket", func(t *testing.T) {
+		store := &testhelpers.StubSubjectStore{}
+		subject := "websockets"
+		server := httptest.NewServer(NewStudyServer(store))
+		defer server.Close()
+
+		wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws"
+		conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+		if err != nil {
+			t.Fatalf("failed to open a ws connection on %q: %v", wsURL, err)
+		}
+		defer conn.Close()
+
+		if err := conn.WriteMessage(websocket.TextMessage, []byte(subject)); err != nil {
+			t.Fatalf("failed to send message %q ovew ws connection: %v", subject, err)
+		}
+
+		time.Sleep(10 * time.Millisecond)
+		assert.Equal(t, store.RecordCall[0], subject)
 	})
 }
 

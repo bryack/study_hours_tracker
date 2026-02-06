@@ -3,9 +3,11 @@ module github.com/bryack/study_hours_tracker
 go 1.25.6
 
 require (
+	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
+	golang.org/x/net v0.45.0
 )
 
 require (
