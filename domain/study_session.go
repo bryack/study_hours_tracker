@@ -1,6 +1,4 @@
-package cli
-
-import "github.com/bryack/study_hours_tracker/domain"
+package domain
 
 // PomodoroRunner represents a timer that can be started for focused study sessions.
 type PomodoroRunner interface {
@@ -9,12 +7,12 @@ type PomodoroRunner interface {
 
 // StudySession encapsulates the business logic for recording study hours.
 type StudySession struct {
-	store          domain.SubjectStore
+	store          SubjectStore
 	pomodoroRunner PomodoroRunner
 }
 
 // NewStudySession creates a new study session manager.
-func NewStudySession(store domain.SubjectStore, pomodoroRunner PomodoroRunner) *StudySession {
+func NewStudySession(store SubjectStore, pomodoroRunner PomodoroRunner) *StudySession {
 	return &StudySession{
 		store:          store,
 		pomodoroRunner: pomodoroRunner,

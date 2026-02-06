@@ -1,10 +1,10 @@
-package cli_test
+package domain_test
 
 import (
 	"errors"
 	"testing"
 
-	"github.com/bryack/study_hours_tracker/adapters/cli"
+	"github.com/bryack/study_hours_tracker/domain"
 	"github.com/bryack/study_hours_tracker/testhelpers"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,7 +25,7 @@ func TestStudySession_RecordPomodoro(t *testing.T) {
 		}
 
 		pomodoroSpy := &SpyPomodoroRunner{}
-		session := cli.NewStudySession(store, pomodoroSpy)
+		session := domain.NewStudySession(store, pomodoroSpy)
 
 		err := session.RecordPomodoro("cli")
 		assert.NoError(t, err)
@@ -43,7 +43,7 @@ func TestStudySession_RecordPomodoro(t *testing.T) {
 		}
 
 		pomodoroSpy := &SpyPomodoroRunner{}
-		session := cli.NewStudySession(store, pomodoroSpy)
+		session := domain.NewStudySession(store, pomodoroSpy)
 
 		err := session.RecordPomodoro("cli")
 		assert.Error(t, err)
@@ -63,7 +63,7 @@ func TestStudySession_RecordManual(t *testing.T) {
 		}
 
 		pomodoroSpy := &SpyPomodoroRunner{}
-		session := cli.NewStudySession(store, pomodoroSpy)
+		session := domain.NewStudySession(store, pomodoroSpy)
 
 		err := session.RecordManual("cli", 3)
 		assert.NoError(t, err)

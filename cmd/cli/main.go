@@ -7,6 +7,7 @@ import (
 	"github.com/bryack/study_hours_tracker/adapters/cli"
 	"github.com/bryack/study_hours_tracker/adapters/database"
 	"github.com/bryack/study_hours_tracker/adapters/pomodoro"
+	"github.com/bryack/study_hours_tracker/domain"
 	domainPomodoro "github.com/bryack/study_hours_tracker/domain/pomodoro"
 )
 
@@ -17,7 +18,7 @@ func main() {
 	}
 
 	pomodoroRunner := domainPomodoro.NewPomodoro(pomodoro.SleeperFunc(pomodoro.PomodoroSleeper))
-	session := cli.NewStudySession(store, pomodoroRunner)
+	session := domain.NewStudySession(store, pomodoroRunner)
 	tracker := cli.NewCLI(os.Stdin, os.Stdout, session)
 	if err := tracker.Run(); err != nil {
 		log.Fatal(err)
