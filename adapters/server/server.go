@@ -16,6 +16,7 @@ const (
 	jsonContentType = "application/json"
 	reportPath      = "/report"
 	trackerPath     = "/tracker/"
+	studyPath       = "/study"
 )
 
 type StudyServer struct {
@@ -31,6 +32,7 @@ func NewStudyServer(store domain.SubjectStore) *StudyServer {
 	router := http.NewServeMux()
 	router.Handle(reportPath, http.HandlerFunc(s.reportHandler))
 	router.Handle(trackerPath, http.HandlerFunc(s.trackerHandler))
+	router.Handle(studyPath, http.HandlerFunc(s.studyHandler))
 
 	s.Handler = router
 
@@ -65,6 +67,10 @@ func (s *StudyServer) trackerHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
+}
+
+func (s *StudyServer) studyHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *StudyServer) processGetRequest(w http.ResponseWriter, subject string) {

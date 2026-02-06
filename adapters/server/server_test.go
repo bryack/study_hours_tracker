@@ -284,3 +284,23 @@ func getReportFromResponse(t testing.TB, body io.Reader) domain.Report {
 	}
 	return report
 }
+
+func TestStudy(t *testing.T) {
+
+	t.Run("GET /study returns 200", func(t *testing.T) {
+		store := &testhelpers.StubSubjectStore{}
+		server := NewStudyServer(store)
+		request := newStudyRequest(t)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		assert.Equal(t, http.StatusOK, response.Code)
+	})
+}
+
+func newStudyRequest(t *testing.T) *http.Request {
+	request, err := http.NewRequest(http.MethodGet, "/study", nil)
+	assert.NoError(t, err)
+	return request
+}
