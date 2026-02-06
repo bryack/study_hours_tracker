@@ -26,7 +26,8 @@ func (s *StudySession) RecordManual(subject string, hours int) error {
 	return s.store.RecordHour(subject, hours)
 }
 
-// RecordPomodoro starts a Pomodoro session and records 1 hour.
+// RecordPomodoro starts a 25-minute Pomodoro session and records it as 1 study hour.
+// Note: This is a simplified tracking where 1 Pomodoro = 1 recorded hour for convenience.
 func (s *StudySession) RecordPomodoro(subject string, out io.Writer) error {
 	s.pomodoroRunner.Start(out)
 	return s.store.RecordHour(subject, 1)

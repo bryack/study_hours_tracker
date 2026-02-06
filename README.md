@@ -44,7 +44,10 @@ quit          # Exit the program
 ```bash
 # In interactive session:
 pomodoro tdd  # Start 25-minute focused session for TDD
-# CLI waits 25 minutes, then outputs "Time's up! Take a break."
+# Alerts during session:
+# - 0 min: "Session started. Stay focused!"
+# - 12 min: "Halfway there! Keep it up."
+# - 25 min: "Time's up! Recording your hour..."
 # Automatically records 1 hour to database
 ```
 
@@ -91,9 +94,8 @@ go fmt ./...
 
 ```
 cmd/          → Entry points (CLI, Web)
-domain/       → Business logic
-store/        → Port interfaces
-adapters/     → Implementations (CLI, Server, Database)
+domain/       → Business logic & port interfaces
+adapters/     → Implementations (CLI, Server, Database, Pomodoro)
 testhelpers/  → Test utilities
 ```
 
