@@ -2,54 +2,45 @@ package pomodoro
 
 import (
 	"bytes"
+	"io"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-type SpySleeper struct {
-	WaitCalled   int
-	LastDuration time.Duration
+type ScheduledAlert struct {
+	At      time.Duration
+	Message string
 }
 
-func (s *SpySleeper) Wait(duration time.Duration) {
+type SpyScheduleAlerter struct {
+	Alerts     []ScheduledAlert
+	WaitCalled int
+}
+
+func (s *SpyScheduleAlerter) ScheduleAlert(duration time.Duration, message string, out io.Writer) {
+	s.Alerts = append(s.Alerts, ScheduledAlert{At: duration, Message: message})
+}
+
+func (s *SpyScheduleAlerter) Wait(duration time.Duration) {
 	s.WaitCalled++
-	s.LastDuration = duration
 }
 
-func TestPomodoro(t *testing.T) {
-	tests := []struct {
-		name             string
-		startCalls       int
-		expectedCalls    int
-		expectedDuration time.Duration
-	}{
-		{
-			name:             "single start waits correct time",
-			startCalls:       1,
-			expectedCalls:    1,
-			expectedDuration: DefaultPomodoroDuration,
-		},
-		{
-			name:             "multiple starts call wait multiple times",
-			startCalls:       3,
-			expectedCalls:    3,
-			expectedDuration: DefaultPomodoroDuration,
-		},
+func TestPomodoro_Start(t *testing.T) {
+	testcases := []ScheduledAlert{
+		{0, "Session started. Stay focused!"},
+		{12*time.Minute + 30*time.Second, "Halfway there! Keep it up."},
+		{25 * time.Minute, "Time's up! Recording your hour..."},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			out := &bytes.Buffer{}
-			sleeper := &SpySleeper{}
-			p := NewPomodoro(sleeper)
-			for range tt.startCalls {
-				p.Start(out)
-			}
-			assert.Equal(t, tt.expectedCalls, sleeper.WaitCalled)
-			assert.Equal(t, DefaultPomodoroDuration, sleeper.LastDuration)
-		})
+	out := &bytes.Buffer{}
+	alerter := &SpyScheduleAlerter{}
+	p := NewPomodoro(alerter)
+	p.Start(out)
+
+	for i, want := range testcases {
+		assert.Equal(t, want, alerter.Alerts[i])
 	}
+	assert.Equal(t, 1, alerter.WaitCalled)
 }
