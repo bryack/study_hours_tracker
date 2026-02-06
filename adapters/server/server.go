@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
@@ -13,10 +14,11 @@ import (
 )
 
 const (
-	jsonContentType = "application/json"
-	reportPath      = "/report"
-	trackerPath     = "/tracker/"
-	studyPath       = "/study"
+	jsonContentType  = "application/json"
+	reportPath       = "/report"
+	trackerPath      = "/tracker/"
+	studyPath        = "/study"
+	htmlTemplatePath = "../../study.html"
 )
 
 type StudyServer struct {
@@ -70,7 +72,12 @@ func (s *StudyServer) trackerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *StudyServer) studyHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+	tmpl, err := template.ParseFiles(htmlTemplatePath)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to load template %q: %s", htmlTemplatePath, err.Error()), http.StatusInternalServerError)
+		return
+	}
+	tmpl.Execute(w, nil)
 }
 
 func (s *StudyServer) processGetRequest(w http.ResponseWriter, subject string) {

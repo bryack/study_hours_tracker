@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Study Hours Tracker</title>
+</head>
+<body>
+<h1>Study Hours Tracker</h1>
+
+<section id="pomodoro">
+    <h2>Start Pomodoro Session</h2>
+    <label for="subject">Subject:</label>
+    <input type="text" id="subject" placeholder="e.g., math, physics"/>
+    <button id="start-button">Start Pomodoro (25 min)</button>
+    <div id="alerts"></div>
+</section>
+
+</body>
+<script type="application/javascript">
+    const startButton = document.getElementById('start-button')
+    const subjectInput = document.getElementById('subject')
+    const alertsContainer = document.getElementById('alerts')
+    
+    if (window['WebSocket']) {
+        const conn = new WebSocket('ws://' + document.location.host + '/ws')
+        
+        startButton.onclick = event => {
+            const subject = subjectInput.value.trim()
+            if (!subject) {
+                alert('Please enter a subject')
+                return
+            }
+            
+            conn.send(JSON.stringify({
+                command: "start_pomodoro",
+                subject: subject
+            }))
+            
+            alertsContainer.innerHTML = '<p><strong>Starting Pomodoro for ' + subject + '...</strong></p>'
+        }
+        
+        conn.onmessage = evt => {
+            alertsContainer.innerHTML += '<p>' + evt.data + '</p>'
+        }
+        
+        conn.onerror = evt => {
+            alertsContainer.innerHTML += '<p style="color: red;">Connection error</p>'
+        }
+        
+        conn.onclose = evt => {
+            alertsContainer.innerHTML += '<p style="color: gray;">Connection closed</p>'
+        }
+    } else {
+        alertsContainer.innerHTML = '<p style="color: red;">WebSocket not supported by your browser</p>'
+    }
+</script>
+</html>
