@@ -1,8 +1,10 @@
 package domain
 
+import "io"
+
 // PomodoroRunner represents a timer that can be started for focused study sessions.
 type PomodoroRunner interface {
-	Start()
+	Start(out io.Writer)
 }
 
 // StudySession encapsulates the business logic for recording study hours.
@@ -25,7 +27,7 @@ func (s *StudySession) RecordManual(subject string, hours int) error {
 }
 
 // RecordPomodoro starts a Pomodoro session and records 1 hour.
-func (s *StudySession) RecordPomodoro(subject string) error {
-	s.pomodoroRunner.Start()
+func (s *StudySession) RecordPomodoro(subject string, out io.Writer) error {
+	s.pomodoroRunner.Start(out)
 	return s.store.RecordHour(subject, 1)
 }

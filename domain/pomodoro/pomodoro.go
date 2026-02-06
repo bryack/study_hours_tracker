@@ -1,7 +1,10 @@
 // Package pomodoro provides timer functionality for focused study sessions.
 package pomodoro
 
-import "time"
+import (
+	"io"
+	"time"
+)
 
 const DefaultPomodoroDuration = 25 * time.Minute
 
@@ -25,6 +28,6 @@ func NewPomodoro(sleeper Sleeper) *Pomodoro {
 }
 
 // Start begins the Pomodoro timer and waits for the configured duration.
-func (p *Pomodoro) Start() {
+func (p *Pomodoro) Start(out io.Writer) {
 	p.sleeper.Wait(p.duration)
 }

@@ -2,6 +2,7 @@ package cli_test
 
 import (
 	"bytes"
+	"io"
 	"strings"
 	"testing"
 
@@ -19,7 +20,7 @@ func (s *SpySession) RecordManual(subject string, hours int) error {
 	return nil
 }
 
-func (s *SpySession) RecordPomodoro(subject string) error {
+func (s *SpySession) RecordPomodoro(subject string, out io.Writer) error {
 	s.ManualCalls[subject] = 1
 	s.PomodoroCalls = append(s.PomodoroCalls, subject)
 	return nil

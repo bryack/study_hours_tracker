@@ -1,6 +1,7 @@
 package pomodoro
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -41,10 +42,11 @@ func TestPomodoro(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+			out := &bytes.Buffer{}
 			sleeper := &SpySleeper{}
 			p := NewPomodoro(sleeper)
 			for range tt.startCalls {
-				p.Start()
+				p.Start(out)
 			}
 			assert.Equal(t, tt.expectedCalls, sleeper.WaitCalled)
 			assert.Equal(t, DefaultPomodoroDuration, sleeper.LastDuration)

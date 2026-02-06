@@ -1,7 +1,9 @@
 package domain_test
 
 import (
+	"bytes"
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/bryack/study_hours_tracker/domain"
@@ -13,12 +15,13 @@ type SpyPomodoroRunner struct {
 	StartCallCount int
 }
 
-func (s *SpyPomodoroRunner) Start() {
+func (s *SpyPomodoroRunner) Start(out io.Writer) {
 	s.StartCallCount++
 }
 
 func TestStudySession_RecordPomodoro(t *testing.T) {
 	t.Run("starts pomodoro and records 1 hour", func(t *testing.T) {
+		out := &bytes.Buffer{}
 		store := &testhelpers.StubSubjectStore{
 			Hours:      map[string]int{},
 			RecordCall: []string{},
@@ -27,7 +30,7 @@ func TestStudySession_RecordPomodoro(t *testing.T) {
 		pomodoroSpy := &SpyPomodoroRunner{}
 		session := domain.NewStudySession(store, pomodoroSpy)
 
-		err := session.RecordPomodoro("cli")
+		err := session.RecordPomodoro("cli", out)
 		assert.NoError(t, err)
 
 		v, ok := store.Hours["cli"]
@@ -36,6 +39,7 @@ func TestStudySession_RecordPomodoro(t *testing.T) {
 		assert.Equal(t, 1, pomodoroSpy.StartCallCount, "should start pomodoro once")
 	})
 	t.Run("returns error if store fails", func(t *testing.T) {
+		out := &bytes.Buffer{}
 		store := &testhelpers.StubSubjectStore{
 			Hours:         map[string]int{},
 			RecordCall:    []string{},
@@ -45,7 +49,7 @@ func TestStudySession_RecordPomodoro(t *testing.T) {
 		pomodoroSpy := &SpyPomodoroRunner{}
 		session := domain.NewStudySession(store, pomodoroSpy)
 
-		err := session.RecordPomodoro("cli")
+		err := session.RecordPomodoro("cli", out)
 		assert.Error(t, err)
 
 		v, ok := store.Hours["cli"]

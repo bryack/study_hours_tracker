@@ -24,7 +24,7 @@ var (
 // SessionRunner defines the interface for managing study sessions.
 type SessionRunner interface {
 	RecordManual(subject string, hours int) error
-	RecordPomodoro(subject string) error
+	RecordPomodoro(subject string, out io.Writer) error
 }
 
 // CLI provides an interactive command-line interface for tracking study hours.
@@ -61,7 +61,7 @@ func (cli *CLI) Run() error {
 
 		if isPomodoro {
 			fmt.Fprintln(cli.out, "Pomodoro started...")
-			if err := cli.session.RecordPomodoro(s); err != nil {
+			if err := cli.session.RecordPomodoro(s, cli.out); err != nil {
 				fmt.Fprintf(cli.out, "failed to record pomodoro: %v\n", err)
 			}
 		} else {
