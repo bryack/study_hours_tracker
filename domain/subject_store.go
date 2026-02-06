@@ -1,9 +1,7 @@
-package store
-
-import "github.com/bryack/study_hours_tracker/domain"
+package domain
 
 type SubjectStore interface {
 	GetHours(subject string) (int, error)
 	RecordHour(subject string, numHours int) error
-	GetReport() (domain.Report, error)
+	GetReport() (Report, error)
 }

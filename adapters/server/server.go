@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/bryack/study_hours_tracker/domain"
-	"github.com/bryack/study_hours_tracker/store"
 )
 
 const (
@@ -20,11 +19,11 @@ const (
 )
 
 type StudyServer struct {
-	Store store.SubjectStore
+	Store domain.SubjectStore
 	http.Handler
 }
 
-func NewStudyServer(store store.SubjectStore) *StudyServer {
+func NewStudyServer(store domain.SubjectStore) *StudyServer {
 	s := &StudyServer{}
 
 	s.Store = store
