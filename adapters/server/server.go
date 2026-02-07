@@ -1,6 +1,7 @@
 package server
 
 import (
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,18 +16,20 @@ import (
 )
 
 const (
-	jsonContentType  = "application/json"
-	reportPath       = "/report"
-	trackerPath      = "/tracker/"
-	studyPath        = "/study"
-	websocketPath    = "/ws"
-	htmlTemplatePath = "../../study.html"
+	jsonContentType = "application/json"
+	reportPath      = "/report"
+	trackerPath     = "/tracker/"
+	studyPath       = "/study"
+	websocketPath   = "/ws"
 )
 
 var wsUpgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
+
+//go:embed study.html
+var studyHTML string
 
 type wsMessage struct {
 	Command string `json:"command"`
@@ -44,9 +47,9 @@ type StudyServer struct {
 func NewStudyServer(store domain.SubjectStore, session domain.SessionRunner) (*StudyServer, error) {
 	s := &StudyServer{}
 
-	tmpl, err := template.ParseFiles(htmlTemplatePath)
+	tmpl, err := template.New("study").Parse(studyHTML)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load template %q: %s", htmlTemplatePath, err)
+		return nil, fmt.Errorf("failed to load template: %s", err)
 	}
 
 	s.store = store
