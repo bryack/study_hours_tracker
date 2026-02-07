@@ -23,15 +23,27 @@ const (
 	htmlTemplatePath = "../../study.html"
 )
 
+var wsUpgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
 type StudyServer struct {
-	Store domain.SubjectStore
+	Store    domain.SubjectStore
+	template *template.Template
 	http.Handler
 }
 
-func NewStudyServer(store domain.SubjectStore) *StudyServer {
+func NewStudyServer(store domain.SubjectStore) (*StudyServer, error) {
 	s := &StudyServer{}
 
+	tmpl, err := template.ParseFiles(htmlTemplatePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load template %q: %s", htmlTemplatePath, err)
+	}
+
 	s.Store = store
+	s.template = tmpl
 
 	router := http.NewServeMux()
 	router.Handle(reportPath, http.HandlerFunc(s.reportHandler))
@@ -41,7 +53,7 @@ func NewStudyServer(store domain.SubjectStore) *StudyServer {
 
 	s.Handler = router
 
-	return s
+	return s, nil
 }
 
 func (s *StudyServer) reportHandler(w http.ResponseWriter, r *http.Request) {
@@ -75,20 +87,11 @@ func (s *StudyServer) trackerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *StudyServer) studyHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles(htmlTemplatePath)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to load template %q: %s", htmlTemplatePath, err.Error()), http.StatusInternalServerError)
-		return
-	}
-	tmpl.Execute(w, nil)
+	s.template.Execute(w, nil)
 }
 
 func (s *StudyServer) webSocketHandler(w http.ResponseWriter, r *http.Request) {
-	upgrader := websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}
-	conn, _ := upgrader.Upgrade(w, r, nil)
+	conn, _ := wsUpgrader.Upgrade(w, r, nil)
 	_, subjectMsg, _ := conn.ReadMessage()
 	s.Store.RecordHour(string(subjectMsg), 1)
 }

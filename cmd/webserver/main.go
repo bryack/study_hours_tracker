@@ -16,7 +16,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	svr := server.NewStudyServer(store)
-
+	svr, err := server.NewStudyServer(store)
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Fatal(http.ListenAndServe(defaultPort, svr))
 }
