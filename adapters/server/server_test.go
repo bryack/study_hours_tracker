@@ -301,7 +301,8 @@ func TestStudy(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, response.Code)
 	})
-	t.Run("upgrade request to websocket", func(t *testing.T) {
+	t.Run("upgrade request to websocket, send two messages, send alert", func(t *testing.T) {
+		wantedScheduleAlert := "Session started. Stay focused!"
 		store := &testhelpers.StubSubjectStore{
 			Hours:      map[string]int{},
 			RecordCall: []string{},
@@ -312,6 +313,7 @@ func TestStudy(t *testing.T) {
 		session := &testhelpers.SpySession{
 			ManualCalls:   map[string]int{},
 			PomodoroCalls: []string{},
+			ScheduleAlert: []byte(wantedScheduleAlert),
 		}
 		studyServer := mustMakeStudyServer(t, store, session)
 		server := httptest.NewServer(studyServer)
@@ -323,8 +325,9 @@ func TestStudy(t *testing.T) {
 		defer conn.Close()
 
 		writeWSMessage(t, manualRecordMessage, conn)
-
+		within(t, 10*time.Millisecond, func() { assertWebsocketGotMsg(t, conn, "Recorded 3 hours for \"tdd\"") })
 		writeWSMessage(t, pomodoroMessage, conn)
+		within(t, 10*time.Millisecond, func() { assertWebsocketGotMsg(t, conn, wantedScheduleAlert) })
 
 		time.Sleep(10 * time.Millisecond)
 		assert.Equal(t, map[string]int{"tdd": 3}, session.ManualCalls)
@@ -357,5 +360,28 @@ func mustDialWS(t *testing.T, wsURL string) *websocket.Conn {
 func writeWSMessage(t *testing.T, message string, conn *websocket.Conn) {
 	if err := conn.WriteMessage(websocket.TextMessage, []byte(message)); err != nil {
 		t.Fatalf("failed to send message %q over ws connection: %v", message, err)
+	}
+}
+
+func assertWebsocketGotMsg(t *testing.T, conn *websocket.Conn, want string) {
+	_, msg, err := conn.ReadMessage()
+	assert.NoError(t, err)
+	assert.Equal(t, want, string(msg))
+}
+
+func within(t testing.TB, d time.Duration, assert func()) {
+	t.Helper()
+
+	done := make(chan struct{}, 1)
+
+	go func() {
+		assert()
+		done <- struct{}{}
+	}()
+
+	select {
+	case <-time.After(d):
+		t.Error("time out")
+	case <-done:
 	}
 }

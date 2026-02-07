@@ -58,6 +58,7 @@ func (s *StubSubjectStore) GetReport() (domain.Report, error) {
 type SpySession struct {
 	ManualCalls   map[string]int
 	PomodoroCalls []string
+	ScheduleAlert []byte
 }
 
 func (s *SpySession) RecordManual(subject string, hours int) error {
@@ -67,6 +68,7 @@ func (s *SpySession) RecordManual(subject string, hours int) error {
 
 func (s *SpySession) RecordPomodoro(subject string, out io.Writer) error {
 	s.PomodoroCalls = append(s.PomodoroCalls, subject)
+	out.Write(s.ScheduleAlert)
 	return nil
 }
 

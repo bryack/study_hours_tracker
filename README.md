@@ -13,13 +13,14 @@ go build -o study-cli ./cmd/cli
 # Type: physics 1
 # Type: quit
 
-# CLI - Pomodoro timer (25 minutes hardcoded)
+# CLI - Pomodoro timer (25 minutes)
 # In interactive session, type:
 # pomodoro tdd
 
 # Web Server (http://localhost:5000)
 go build -o study-server ./cmd/webserver
 ./study-server
+# Open browser to http://localhost:5000/study
 ```
 
 ## CLI Features
@@ -50,6 +51,30 @@ pomodoro tdd  # Start 25-minute focused session for TDD
 # - 25 min: "Time's up! Recording your hour..."
 # Automatically records 1 hour to database
 ```
+
+## Web Interface Features
+
+### Access the Web UI
+```bash
+# Start server and open browser
+go run ./cmd/webserver
+# Navigate to http://localhost:5000/study
+```
+
+### Pomodoro Session (WebSocket)
+- Enter subject name
+- Click "Start Pomodoro (25 min)"
+- Receive real-time alerts in browser:
+  - 0 min: "Session started. Stay focused!"
+  - 12 min: "Halfway there! Keep it up."
+  - 25 min: "Time's up! Recording your hour..."
+- Automatically records 1 hour to database
+
+### Manual Recording (WebSocket)
+- Enter subject and hours
+- Click "Record Hours"
+- Instant confirmation message
+- Immediately saved to database
 
 ## API
 
@@ -99,4 +124,4 @@ adapters/     → Implementations (CLI, Server, Database, Pomodoro)
 testhelpers/  → Test utilities
 ```
 
-**Stack:** Go 1.25.6 • PostgreSQL • Testify • Testcontainers
+**Stack:** Go 1.25.6 • PostgreSQL • Gorilla WebSocket • Testify • Testcontainers

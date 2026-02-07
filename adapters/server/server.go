@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -99,12 +98,32 @@ func (s *StudyServer) studyHandler(w http.ResponseWriter, r *http.Request) {
 	s.template.Execute(w, nil)
 }
 
+type studyServerWs struct {
+	*websocket.Conn
+}
+
+func newStudyServerWs(w http.ResponseWriter, r *http.Request) *studyServerWs {
+	conn, err := wsUpgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Printf("failed to upgrade connection to websocket: %v\n", err)
+	}
+	return &studyServerWs{conn}
+}
+
+func (ws *studyServerWs) Write(p []byte) (n int, err error) {
+	err = ws.WriteMessage(websocket.TextMessage, p)
+	if err != nil {
+		return 0, err
+	}
+	return len(p), nil
+}
+
 func (s *StudyServer) webSocketHandler(w http.ResponseWriter, r *http.Request) {
-	conn, _ := wsUpgrader.Upgrade(w, r, nil)
-	defer conn.Close()
+	ws := newStudyServerWs(w, r)
+	defer ws.Close()
 
 	for {
-		_, msgBytes, err := conn.ReadMessage()
+		_, msgBytes, err := ws.ReadMessage()
 		if err != nil {
 			log.Printf("websocket read error: %v", err)
 			break
@@ -113,24 +132,28 @@ func (s *StudyServer) webSocketHandler(w http.ResponseWriter, r *http.Request) {
 		var msg wsMessage
 		if err := json.Unmarshal(msgBytes, &msg); err != nil {
 			log.Printf("failed to parse websocket message: %v", err)
-			conn.WriteMessage(websocket.TextMessage, []byte("invalid message format"))
+			ws.WriteMessage(websocket.TextMessage, []byte("invalid message format"))
 			continue
 		}
 
-		switch msg.Command {
-		case "start_pomodoro":
-			if err := s.session.RecordPomodoro(msg.Subject, io.Discard); err != nil {
-				conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("failed to start pomodoro session for %q: %v", msg.Subject, err)))
-			}
-		case "record_manual":
-			if err := s.session.RecordManual(msg.Subject, msg.Hours); err != nil {
-				conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("failed to record hours for %q: %v", msg.Subject, err)))
-			} else {
-				conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Recorded %d hours for %q", msg.Hours, msg.Subject)))
-			}
-		default:
-			conn.WriteMessage(websocket.TextMessage, []byte("invalid command"))
+		s.routeCommands(msg, ws)
+	}
+}
+
+func (s *StudyServer) routeCommands(msg wsMessage, ws *studyServerWs) {
+	switch msg.Command {
+	case "start_pomodoro":
+		if err := s.session.RecordPomodoro(msg.Subject, ws); err != nil {
+			ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("failed to start pomodoro session for %q: %v", msg.Subject, err)))
 		}
+	case "record_manual":
+		if err := s.session.RecordManual(msg.Subject, msg.Hours); err != nil {
+			ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("failed to record hours for %q: %v", msg.Subject, err)))
+		} else {
+			ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Recorded %d hours for %q", msg.Hours, msg.Subject)))
+		}
+	default:
+		ws.WriteMessage(websocket.TextMessage, []byte("invalid command"))
 	}
 }
 

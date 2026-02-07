@@ -8,20 +8,20 @@
 <h1>Study Hours Tracker</h1>
 
 <section id="study">
-    <div id="pomodoro-section">
-        <h2>Start Pomodoro Session</h2>
-        <label for="pomodoro-subject">Subject:</label>
-        <input type="text" id="pomodoro-subject" placeholder="e.g., math, physics"/>
-        <button id="start-pomodoro">Start Pomodoro (25 min)</button>
-    </div>
-    
-    <div id="manual-section">
+<div id="manual-section">
         <h2>Record Manual Hours</h2>
         <label for="manual-subject">Subject:</label>
         <input type="text" id="manual-subject" placeholder="e.g., math, physics"/>
         <label for="manual-hours">Hours:</label>
         <input type="number" id="manual-hours" min="1" placeholder="e.g., 2"/>
         <button id="record-manual">Record Hours</button>
+    </div>
+
+    <div id="pomodoro-section">
+        <h2>Start Pomodoro Session</h2>
+        <label for="pomodoro-subject">Subject:</label>
+        <input type="text" id="pomodoro-subject" placeholder="e.g., math, physics"/>
+        <button id="start-pomodoro">Start Pomodoro (25 min)</button>
     </div>
     
     <div id="alerts"></div>
@@ -68,8 +68,6 @@
                 subject: subject,
                 hours: hours
             }))
-            
-            alertsContainer.innerHTML = '<p><strong>Recorded ' + hours + ' hour(s) for ' + subject + '</strong></p>'
         }
         
         conn.onmessage = evt => {
