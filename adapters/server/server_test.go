@@ -329,10 +329,43 @@ func TestStudy(t *testing.T) {
 		writeWSMessage(t, pomodoroMessage, conn)
 		within(t, 10*time.Millisecond, func() { assertWebsocketGotMsg(t, conn, wantedScheduleAlert) })
 
-		time.Sleep(10 * time.Millisecond)
-		assert.Equal(t, map[string]int{"tdd": 3}, session.ManualCalls)
-		assert.Equal(t, []string{"websocket"}, session.PomodoroCalls)
+		assertSessionManualCalls(t, session, map[string]int{"tdd": 3})
+		assertSessionPomodoroCalls(t, session, []string{"websocket"})
 	})
+}
+
+func assertSessionManualCalls(t testing.TB, session *testhelpers.SpySession, storeMap map[string]int) {
+	t.Helper()
+
+	passed := retryUntil(500*time.Millisecond, func() bool {
+		return assert.Equal(t, storeMap, session.ManualCalls)
+	})
+
+	if !passed {
+		t.Errorf("expected %v but got %v", storeMap, session.ManualCalls)
+	}
+}
+
+func assertSessionPomodoroCalls(t testing.TB, session *testhelpers.SpySession, storeSlice []string) {
+	t.Helper()
+
+	passed := retryUntil(500*time.Millisecond, func() bool {
+		return assert.Equal(t, storeSlice, session.PomodoroCalls)
+	})
+
+	if !passed {
+		t.Errorf("expected %v but got %v", storeSlice, session.ManualCalls)
+	}
+}
+
+func retryUntil(d time.Duration, f func() bool) bool {
+	deadline := time.Now().Add(d)
+	for time.Now().Before(deadline) {
+		if f() {
+			return true
+		}
+	}
+	return false
 }
 
 func newStudyRequest(t *testing.T) *http.Request {
