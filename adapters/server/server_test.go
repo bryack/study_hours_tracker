@@ -28,10 +28,8 @@ func TestGETSubjects(t *testing.T) {
 			"http": 10,
 		},
 	}
-	server, err := NewStudyServer(store)
-	if err != nil {
-		t.Fatalf("failed to set up server: %v", err)
-	}
+	server := mustMakeStudyServer(t, store)
+
 	t.Run("returns TDD hours", func(t *testing.T) {
 		tddHours := "20"
 		request, err := http.NewRequest(http.MethodGet, "/tracker/tdd", nil)
@@ -75,10 +73,7 @@ func TestGETSubjects(t *testing.T) {
 		failedStore := &testhelpers.StubSubjectStore{
 			GetHoursErr: errors.New("database connection lost"),
 		}
-		failedServer, err := NewStudyServer(failedStore)
-		if err != nil {
-			t.Fatalf("failed to set up server: %v", err)
-		}
+		failedServer := mustMakeStudyServer(t, failedStore)
 		request, err := http.NewRequest(http.MethodGet, "/tracker/tdd", nil)
 		assert.NoError(t, err)
 		response := httptest.NewRecorder()
@@ -147,10 +142,7 @@ func TestPostHoursToSubject(t *testing.T) {
 				RecordCall:    []string{},
 				RecordHourErr: tt.recordHourErr,
 			}
-			server, err := NewStudyServer(store)
-			if err != nil {
-				t.Fatalf("failed to set up server: %v", err)
-			}
+			server := mustMakeStudyServer(t, store)
 			request, err := http.NewRequest(http.MethodPost, tt.path, nil)
 			if err != nil {
 				t.Fatal(err)
@@ -169,10 +161,7 @@ func TestMethodNotAllowed(t *testing.T) {
 	store := &testhelpers.StubSubjectStore{
 		Hours: map[string]int{},
 	}
-	server, err := NewStudyServer(store)
-	if err != nil {
-		t.Fatalf("failed to set up server: %v", err)
-	}
+	server := mustMakeStudyServer(t, store)
 	t.Run("handle 405", func(t *testing.T) {
 		request, err := http.NewRequest(http.MethodPut, "/tracker/tdd", nil)
 		if err != nil {
@@ -195,10 +184,7 @@ func TestRacePostgresSubjectStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create store: %v", err)
 	}
-	server, err := NewStudyServer(store)
-	if err != nil {
-		t.Fatalf("failed to set up server: %v", err)
-	}
+	server := mustMakeStudyServer(t, store)
 
 	const concurrentRequests = 100
 	const hoursPerRequest = 2
@@ -232,10 +218,7 @@ func TestRecordingHoursAndRetrievingThem(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create store: %v", err)
 	}
-	server, err := NewStudyServer(store)
-	if err != nil {
-		t.Fatalf("failed to set up server: %v", err)
-	}
+	server := mustMakeStudyServer(t, store)
 
 	postReq, err := http.NewRequest(http.MethodPost, "/tracker/tdd?hours=1", nil)
 	if err != nil {
@@ -266,10 +249,7 @@ func TestReport(t *testing.T) {
 		store := &testhelpers.StubSubjectStore{
 			Report: wantedReport,
 		}
-		server, err := NewStudyServer(store)
-		if err != nil {
-			t.Fatalf("failed to set up server: %v", err)
-		}
+		server := mustMakeStudyServer(t, store)
 		request, err := http.NewRequest(http.MethodGet, "/report", nil)
 		assert.NoError(t, err)
 		response := httptest.NewRecorder()
@@ -288,10 +268,7 @@ func TestReport(t *testing.T) {
 			Hours:        map[string]int{},
 			GetReportErr: errors.New("database connection failed"),
 		}
-		server, err := NewStudyServer(store)
-		if err != nil {
-			t.Fatalf("failed to set up server: %v", err)
-		}
+		server := mustMakeStudyServer(t, store)
 
 		request, err := http.NewRequest(http.MethodGet, "/report", nil)
 		assert.NoError(t, err)
@@ -317,10 +294,7 @@ func TestStudy(t *testing.T) {
 
 	t.Run("GET /study returns 200", func(t *testing.T) {
 		store := &testhelpers.StubSubjectStore{}
-		server, err := NewStudyServer(store)
-		if err != nil {
-			t.Fatalf("failed to set up server: %v", err)
-		}
+		server := mustMakeStudyServer(t, store)
 		request := newStudyRequest(t)
 		response := httptest.NewRecorder()
 
@@ -332,24 +306,16 @@ func TestStudy(t *testing.T) {
 		store := &testhelpers.StubSubjectStore{}
 		subject := "websocket"
 		message := fmt.Sprintf(`{"command":"start_pomodoro","subject":"%s"}`, subject)
-		studyServer, err := NewStudyServer(store)
-		if err != nil {
-			t.Fatalf("failed to set up server: %v", err)
-		}
+		studyServer := mustMakeStudyServer(t, store)
 
 		server := httptest.NewServer(studyServer)
 		defer server.Close()
 
 		wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws"
-		conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
-		if err != nil {
-			t.Fatalf("failed to open a ws connection on %q: %v", wsURL, err)
-		}
+		conn := mustDialWS(t, wsURL)
 		defer conn.Close()
 
-		if err := conn.WriteMessage(websocket.TextMessage, []byte(message)); err != nil {
-			t.Fatalf("failed to send message %q over ws connection: %v", message, err)
-		}
+		writeWSMessage(t, message, conn)
 
 		time.Sleep(10 * time.Millisecond)
 		assert.Equal(t, store.RecordCall[0], subject)
@@ -360,4 +326,26 @@ func newStudyRequest(t *testing.T) *http.Request {
 	request, err := http.NewRequest(http.MethodGet, "/study", nil)
 	assert.NoError(t, err)
 	return request
+}
+
+func mustMakeStudyServer(t *testing.T, store domain.SubjectStore) *StudyServer {
+	studyServer, err := NewStudyServer(store)
+	if err != nil {
+		t.Fatalf("failed to set up server: %v", err)
+	}
+	return studyServer
+}
+
+func mustDialWS(t *testing.T, wsURL string) *websocket.Conn {
+	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err != nil {
+		t.Fatalf("failed to open a ws connection on %q: %v", wsURL, err)
+	}
+	return conn
+}
+
+func writeWSMessage(t *testing.T, message string, conn *websocket.Conn) {
+	if err := conn.WriteMessage(websocket.TextMessage, []byte(message)); err != nil {
+		t.Fatalf("failed to send message %q over ws connection: %v", message, err)
+	}
 }
