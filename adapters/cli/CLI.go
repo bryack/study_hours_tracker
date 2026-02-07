@@ -8,6 +8,8 @@ import (
 	"io"
 	"strconv"
 	"strings"
+
+	"github.com/bryack/study_hours_tracker/domain"
 )
 
 const (
@@ -21,21 +23,15 @@ var (
 	ErrInvalidHours  = errors.New("failed to parse hours")
 )
 
-// SessionRunner defines the interface for managing study sessions.
-type SessionRunner interface {
-	RecordManual(subject string, hours int) error
-	RecordPomodoro(subject string, out io.Writer) error
-}
-
 // CLI provides an interactive command-line interface for tracking study hours.
 type CLI struct {
 	in      *bufio.Scanner
 	out     io.Writer
-	session SessionRunner
+	session domain.SessionRunner
 }
 
 // NewCLI creates a new CLI with the given dependencies.
-func NewCLI(in io.Reader, out io.Writer, session SessionRunner) *CLI {
+func NewCLI(in io.Reader, out io.Writer, session domain.SessionRunner) *CLI {
 	return &CLI{
 		in:      bufio.NewScanner(in),
 		out:     out,

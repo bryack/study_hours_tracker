@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -28,7 +27,7 @@ func TestGETSubjects(t *testing.T) {
 			"http": 10,
 		},
 	}
-	server := mustMakeStudyServer(t, store)
+	server := mustMakeStudyServer(t, store, &testhelpers.SpySession{})
 
 	t.Run("returns TDD hours", func(t *testing.T) {
 		tddHours := "20"
@@ -73,7 +72,7 @@ func TestGETSubjects(t *testing.T) {
 		failedStore := &testhelpers.StubSubjectStore{
 			GetHoursErr: errors.New("database connection lost"),
 		}
-		failedServer := mustMakeStudyServer(t, failedStore)
+		failedServer := mustMakeStudyServer(t, failedStore, &testhelpers.SpySession{})
 		request, err := http.NewRequest(http.MethodGet, "/tracker/tdd", nil)
 		assert.NoError(t, err)
 		response := httptest.NewRecorder()
@@ -142,7 +141,7 @@ func TestPostHoursToSubject(t *testing.T) {
 				RecordCall:    []string{},
 				RecordHourErr: tt.recordHourErr,
 			}
-			server := mustMakeStudyServer(t, store)
+			server := mustMakeStudyServer(t, store, &testhelpers.SpySession{})
 			request, err := http.NewRequest(http.MethodPost, tt.path, nil)
 			if err != nil {
 				t.Fatal(err)
@@ -161,7 +160,7 @@ func TestMethodNotAllowed(t *testing.T) {
 	store := &testhelpers.StubSubjectStore{
 		Hours: map[string]int{},
 	}
-	server := mustMakeStudyServer(t, store)
+	server := mustMakeStudyServer(t, store, &testhelpers.SpySession{})
 	t.Run("handle 405", func(t *testing.T) {
 		request, err := http.NewRequest(http.MethodPut, "/tracker/tdd", nil)
 		if err != nil {
@@ -184,7 +183,7 @@ func TestRacePostgresSubjectStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create store: %v", err)
 	}
-	server := mustMakeStudyServer(t, store)
+	server := mustMakeStudyServer(t, store, &testhelpers.SpySession{})
 
 	const concurrentRequests = 100
 	const hoursPerRequest = 2
@@ -218,7 +217,7 @@ func TestRecordingHoursAndRetrievingThem(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create store: %v", err)
 	}
-	server := mustMakeStudyServer(t, store)
+	server := mustMakeStudyServer(t, store, &testhelpers.SpySession{})
 
 	postReq, err := http.NewRequest(http.MethodPost, "/tracker/tdd?hours=1", nil)
 	if err != nil {
@@ -249,7 +248,7 @@ func TestReport(t *testing.T) {
 		store := &testhelpers.StubSubjectStore{
 			Report: wantedReport,
 		}
-		server := mustMakeStudyServer(t, store)
+		server := mustMakeStudyServer(t, store, &testhelpers.SpySession{})
 		request, err := http.NewRequest(http.MethodGet, "/report", nil)
 		assert.NoError(t, err)
 		response := httptest.NewRecorder()
@@ -268,7 +267,7 @@ func TestReport(t *testing.T) {
 			Hours:        map[string]int{},
 			GetReportErr: errors.New("database connection failed"),
 		}
-		server := mustMakeStudyServer(t, store)
+		server := mustMakeStudyServer(t, store, &testhelpers.SpySession{})
 
 		request, err := http.NewRequest(http.MethodGet, "/report", nil)
 		assert.NoError(t, err)
@@ -294,7 +293,7 @@ func TestStudy(t *testing.T) {
 
 	t.Run("GET /study returns 200", func(t *testing.T) {
 		store := &testhelpers.StubSubjectStore{}
-		server := mustMakeStudyServer(t, store)
+		server := mustMakeStudyServer(t, store, &testhelpers.SpySession{})
 		request := newStudyRequest(t)
 		response := httptest.NewRecorder()
 
@@ -303,22 +302,33 @@ func TestStudy(t *testing.T) {
 		assert.Equal(t, http.StatusOK, response.Code)
 	})
 	t.Run("upgrade request to websocket", func(t *testing.T) {
-		store := &testhelpers.StubSubjectStore{}
-		subject := "websocket"
-		message := fmt.Sprintf(`{"command":"start_pomodoro","subject":"%s"}`, subject)
-		studyServer := mustMakeStudyServer(t, store)
+		store := &testhelpers.StubSubjectStore{
+			Hours:      map[string]int{},
+			RecordCall: []string{},
+		}
+		pomodoroMessage := `{"command":"start_pomodoro","subject":"websocket"}`
+		manualRecordMessage := `{"command":"record_manual","subject":"tdd","hours":3}`
 
+		session := &testhelpers.SpySession{
+			ManualCalls:   map[string]int{},
+			PomodoroCalls: []string{},
+		}
+		studyServer := mustMakeStudyServer(t, store, session)
 		server := httptest.NewServer(studyServer)
-		defer server.Close()
 
 		wsURL := "ws" + strings.TrimPrefix(server.URL, "http") + "/ws"
 		conn := mustDialWS(t, wsURL)
+
+		defer server.Close()
 		defer conn.Close()
 
-		writeWSMessage(t, message, conn)
+		writeWSMessage(t, manualRecordMessage, conn)
+
+		writeWSMessage(t, pomodoroMessage, conn)
 
 		time.Sleep(10 * time.Millisecond)
-		assert.Equal(t, store.RecordCall[0], subject)
+		assert.Equal(t, map[string]int{"tdd": 3}, session.ManualCalls)
+		assert.Equal(t, []string{"websocket"}, session.PomodoroCalls)
 	})
 }
 
@@ -328,8 +338,8 @@ func newStudyRequest(t *testing.T) *http.Request {
 	return request
 }
 
-func mustMakeStudyServer(t *testing.T, store domain.SubjectStore) *StudyServer {
-	studyServer, err := NewStudyServer(store)
+func mustMakeStudyServer(t *testing.T, store domain.SubjectStore, session domain.SessionRunner) *StudyServer {
+	studyServer, err := NewStudyServer(store, session)
 	if err != nil {
 		t.Fatalf("failed to set up server: %v", err)
 	}

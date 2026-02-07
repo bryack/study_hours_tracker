@@ -7,25 +7,40 @@
 <body>
 <h1>Study Hours Tracker</h1>
 
-<section id="pomodoro">
-    <h2>Start Pomodoro Session</h2>
-    <label for="subject">Subject:</label>
-    <input type="text" id="subject" placeholder="e.g., math, physics"/>
-    <button id="start-button">Start Pomodoro (25 min)</button>
+<section id="study">
+    <div id="pomodoro-section">
+        <h2>Start Pomodoro Session</h2>
+        <label for="pomodoro-subject">Subject:</label>
+        <input type="text" id="pomodoro-subject" placeholder="e.g., math, physics"/>
+        <button id="start-pomodoro">Start Pomodoro (25 min)</button>
+    </div>
+    
+    <div id="manual-section">
+        <h2>Record Manual Hours</h2>
+        <label for="manual-subject">Subject:</label>
+        <input type="text" id="manual-subject" placeholder="e.g., math, physics"/>
+        <label for="manual-hours">Hours:</label>
+        <input type="number" id="manual-hours" min="1" placeholder="e.g., 2"/>
+        <button id="record-manual">Record Hours</button>
+    </div>
+    
     <div id="alerts"></div>
 </section>
 
 </body>
 <script type="application/javascript">
-    const startButton = document.getElementById('start-button')
-    const subjectInput = document.getElementById('subject')
+    const startPomodoroButton = document.getElementById('start-pomodoro')
+    const pomodoroSubjectInput = document.getElementById('pomodoro-subject')
+    const recordManualButton = document.getElementById('record-manual')
+    const manualSubjectInput = document.getElementById('manual-subject')
+    const manualHoursInput = document.getElementById('manual-hours')
     const alertsContainer = document.getElementById('alerts')
     
     if (window['WebSocket']) {
         const conn = new WebSocket('ws://' + document.location.host + '/ws')
         
-        startButton.onclick = event => {
-            const subject = subjectInput.value.trim()
+        startPomodoroButton.onclick = event => {
+            const subject = pomodoroSubjectInput.value.trim()
             if (!subject) {
                 alert('Please enter a subject')
                 return
@@ -37,6 +52,24 @@
             }))
             
             alertsContainer.innerHTML = '<p><strong>Starting Pomodoro for ' + subject + '...</strong></p>'
+        }
+        
+        recordManualButton.onclick = event => {
+            const subject = manualSubjectInput.value.trim()
+            const hours = parseInt(manualHoursInput.value)
+            
+            if (!subject || !hours || hours < 1) {
+                alert('Please enter both subject and valid hours')
+                return
+            }
+            
+            conn.send(JSON.stringify({
+                command: "record_manual",
+                subject: subject,
+                hours: hours
+            }))
+            
+            alertsContainer.innerHTML = '<p><strong>Recorded ' + hours + ' hour(s) for ' + subject + '</strong></p>'
         }
         
         conn.onmessage = evt => {

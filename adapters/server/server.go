@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -28,18 +29,20 @@ var wsUpgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-type PomodoroMessage struct {
+type wsMessage struct {
 	Command string `json:"command"`
 	Subject string `json:"subject"`
+	Hours   int    `json:"hours,omitempty"` // Optional, only for record_manual
 }
 
 type StudyServer struct {
-	Store    domain.SubjectStore
+	store    domain.SubjectStore
 	template *template.Template
+	session  domain.SessionRunner
 	http.Handler
 }
 
-func NewStudyServer(store domain.SubjectStore) (*StudyServer, error) {
+func NewStudyServer(store domain.SubjectStore, session domain.SessionRunner) (*StudyServer, error) {
 	s := &StudyServer{}
 
 	tmpl, err := template.ParseFiles(htmlTemplatePath)
@@ -47,8 +50,9 @@ func NewStudyServer(store domain.SubjectStore) (*StudyServer, error) {
 		return nil, fmt.Errorf("failed to load template %q: %s", htmlTemplatePath, err)
 	}
 
-	s.Store = store
+	s.store = store
 	s.template = tmpl
+	s.session = session
 
 	router := http.NewServeMux()
 	router.Handle(reportPath, http.HandlerFunc(s.reportHandler))
@@ -62,7 +66,7 @@ func NewStudyServer(store domain.SubjectStore) (*StudyServer, error) {
 }
 
 func (s *StudyServer) reportHandler(w http.ResponseWriter, r *http.Request) {
-	studyActivities, err := s.Store.GetReport()
+	studyActivities, err := s.store.GetReport()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -97,18 +101,31 @@ func (s *StudyServer) studyHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *StudyServer) webSocketHandler(w http.ResponseWriter, r *http.Request) {
 	conn, _ := wsUpgrader.Upgrade(w, r, nil)
-	_, msgBytes, _ := conn.ReadMessage()
 
-	var msg PomodoroMessage
-	if err := json.Unmarshal(msgBytes, &msg); err != nil {
-		log.Printf("failed to parse websocket message: %v", err)
+	for {
+		_, msgBytes, _ := conn.ReadMessage()
+		var msg wsMessage
+		if err := json.Unmarshal(msgBytes, &msg); err != nil {
+			log.Printf("failed to parse websocket message: %v", err)
+		}
+
+		switch msg.Command {
+		case "start_pomodoro":
+			if err := s.session.RecordPomodoro(msg.Subject, io.Discard); err != nil {
+				fmt.Fprintf(w, "failed to start pomodoro session for %q: %v", msg.Subject, err)
+			}
+		case "record_manual":
+			if err := s.session.RecordManual(msg.Subject, msg.Hours); err != nil {
+				fmt.Fprintf(w, "failed to record hours for %q: %v", msg.Subject, err)
+			}
+		default:
+			fmt.Fprintln(w, "invalid command")
+		}
 	}
-
-	s.Store.RecordHour(msg.Subject, 1)
 }
 
 func (s *StudyServer) processGetRequest(w http.ResponseWriter, subject string) {
-	hours, err := s.Store.GetHours(subject)
+	hours, err := s.store.GetHours(subject)
 	if err != nil {
 		if errors.Is(err, domain.ErrSubjectNotFound) {
 			w.WriteHeader(http.StatusNotFound)
@@ -127,7 +144,7 @@ func (s *StudyServer) processPostRequest(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
-	err = s.Store.RecordHour(subject, h)
+	err = s.store.RecordHour(subject, h)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

@@ -2,29 +2,13 @@ package cli_test
 
 import (
 	"bytes"
-	"io"
 	"strings"
 	"testing"
 
 	"github.com/bryack/study_hours_tracker/adapters/cli"
+	"github.com/bryack/study_hours_tracker/testhelpers"
 	"github.com/stretchr/testify/assert"
 )
-
-type SpySession struct {
-	ManualCalls   map[string]int
-	PomodoroCalls []string
-}
-
-func (s *SpySession) RecordManual(subject string, hours int) error {
-	s.ManualCalls[subject] = hours
-	return nil
-}
-
-func (s *SpySession) RecordPomodoro(subject string, out io.Writer) error {
-	s.ManualCalls[subject] = 1
-	s.PomodoroCalls = append(s.PomodoroCalls, subject)
-	return nil
-}
 
 func TestCLI(t *testing.T) {
 	tests := []struct {
@@ -80,7 +64,7 @@ func TestCLI(t *testing.T) {
 			name:                  "start pomodoro for tdd",
 			input:                 "pomodoro tdd",
 			expectedOut:           cli.GreetingString + "\nPomodoro started...",
-			expectedManualCalls:   map[string]int{"tdd": 1},
+			expectedManualCalls:   map[string]int{},
 			expectedPomodoroCalls: []string{"tdd"},
 		},
 		{
@@ -95,7 +79,7 @@ func TestCLI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			session := &SpySession{
+			session := &testhelpers.SpySession{
 				ManualCalls:   map[string]int{},
 				PomodoroCalls: []string{},
 			}

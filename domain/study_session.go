@@ -2,6 +2,12 @@ package domain
 
 import "io"
 
+// SessionRunner defines the interface for managing study sessions.
+type SessionRunner interface {
+	RecordManual(subject string, hours int) error
+	RecordPomodoro(subject string, out io.Writer) error
+}
+
 // PomodoroRunner represents a timer that can be started for focused study sessions.
 type PomodoroRunner interface {
 	Start(out io.Writer)

@@ -3,6 +3,7 @@ package testhelpers
 import (
 	"context"
 	"fmt"
+	"io"
 	"testing"
 	"time"
 
@@ -52,6 +53,21 @@ func (s *StubSubjectStore) GetReport() (domain.Report, error) {
 		return nil, s.GetReportErr
 	}
 	return s.Report, nil
+}
+
+type SpySession struct {
+	ManualCalls   map[string]int
+	PomodoroCalls []string
+}
+
+func (s *SpySession) RecordManual(subject string, hours int) error {
+	s.ManualCalls[subject] = hours
+	return nil
+}
+
+func (s *SpySession) RecordPomodoro(subject string, out io.Writer) error {
+	s.PomodoroCalls = append(s.PomodoroCalls, subject)
+	return nil
 }
 
 func SetupTestContainer(t testing.TB) string {
