@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -327,9 +328,10 @@ func TestStudy(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, response.Code)
 	})
-	t.Run("upgrade to websocket", func(t *testing.T) {
+	t.Run("upgrade request to websocket", func(t *testing.T) {
 		store := &testhelpers.StubSubjectStore{}
-		subject := "websockets"
+		subject := "websocket"
+		message := fmt.Sprintf(`{"command":"start_pomodoro","subject":"%s"}`, subject)
 		studyServer, err := NewStudyServer(store)
 		if err != nil {
 			t.Fatalf("failed to set up server: %v", err)
@@ -345,8 +347,8 @@ func TestStudy(t *testing.T) {
 		}
 		defer conn.Close()
 
-		if err := conn.WriteMessage(websocket.TextMessage, []byte(subject)); err != nil {
-			t.Fatalf("failed to send message %q over ws connection: %v", subject, err)
+		if err := conn.WriteMessage(websocket.TextMessage, []byte(message)); err != nil {
+			t.Fatalf("failed to send message %q over ws connection: %v", message, err)
 		}
 
 		time.Sleep(10 * time.Millisecond)

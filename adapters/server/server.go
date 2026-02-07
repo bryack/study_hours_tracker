@@ -28,6 +28,11 @@ var wsUpgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
+type PomodoroMessage struct {
+	Command string `json:"command"`
+	Subject string `json:"subject"`
+}
+
 type StudyServer struct {
 	Store    domain.SubjectStore
 	template *template.Template
@@ -92,8 +97,14 @@ func (s *StudyServer) studyHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *StudyServer) webSocketHandler(w http.ResponseWriter, r *http.Request) {
 	conn, _ := wsUpgrader.Upgrade(w, r, nil)
-	_, subjectMsg, _ := conn.ReadMessage()
-	s.Store.RecordHour(string(subjectMsg), 1)
+	_, msgBytes, _ := conn.ReadMessage()
+
+	var msg PomodoroMessage
+	if err := json.Unmarshal(msgBytes, &msg); err != nil {
+		log.Printf("failed to parse websocket message: %v", err)
+	}
+
+	s.Store.RecordHour(msg.Subject, 1)
 }
 
 func (s *StudyServer) processGetRequest(w http.ResponseWriter, subject string) {
